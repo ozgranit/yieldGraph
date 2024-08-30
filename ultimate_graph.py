@@ -138,7 +138,6 @@ def graph_better_investment(housing_prices, spy_ticker, starting_year):
     plt.ylabel('Investment Value')
     plt.title('Housing vs SPY Investment')
 
-
     plt.show()
 
 
