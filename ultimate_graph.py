@@ -15,8 +15,25 @@ def get_yahoo_file(file_name):
     return prices
 
 
-def get_USD_to_ILS():
-    return get_yahoo_file('ILS=X.csv')
+def get_USD_to_ILS(spy_prices, starting_year):
+
+    usd_ils_conversion_rates = get_yahoo_file('ILS=X.csv')
+
+    # drop all values before starting year
+    usd_ils_conversion_rates = usd_ils_conversion_rates[1 + 12 * (starting_year - 2004):]
+
+    # Assume the conversion rate list starts in 12/2003, and we need to add 4.4 before that
+    missing_months = len(spy_prices) - len(usd_ils_conversion_rates)
+
+    assert missing_months >= 0, "Conversion rates must start before SPY prices"
+
+    # Add 4.4 for the missing months at the start
+    usd_ils_conversion_rates = [4.4] * missing_months + usd_ils_conversion_rates
+
+    # Now usd_ils_conversion_rates matches the length of spy_prices
+    assert len(usd_ils_conversion_rates) == len(spy_prices), "Conversion rates and SPY prices must have the same length"
+
+    return usd_ils_conversion_rates
 
 
 def read_housing_data():
@@ -61,7 +78,7 @@ def invest_in_house(investment, starting_year):
     return housing_prices
 
 
-def invest_in_spy(initial_investment, starting_year, monthly_payment, years_for_mortgage):
+def invest_in_spy(initial_investment_ils, starting_year, monthly_payment_ils, years_for_mortgage):
     spy_prices = get_yahoo_file('SPY.csv')
 
     # drop all values before starting year
@@ -69,25 +86,35 @@ def invest_in_spy(initial_investment, starting_year, monthly_payment, years_for_
     calculate_average_yearly_yield(spy_prices, 'SPY')
 
     # List to hold the value of the investment over time
-    investment_values = []
+    investment_values_ils = []
 
-    # Number of shares you own initially
-    shares_owned = initial_investment / spy_prices[0]
+    # Example USD/ILS conversion rates (assume 4.4 ILS/USD for months before 12/2003)
+    usd_ils_conversion_rates = get_USD_to_ILS(spy_prices, starting_year)
+
+    # Convert initial investment to USD using the first exchange rate
+    initial_investment_usd = initial_investment_ils / usd_ils_conversion_rates[0]
+
+    # Number of shares you own initially in USD
+    shares_owned = initial_investment_usd / spy_prices[0]
 
     # Iterate over the list of prices and calculate the investment value at each month
     for i, price in enumerate(spy_prices):
 
-        # Add monthly contribution only for the time you are paying mortgage
+        # Add monthly contribution in USD only for the time you are paying mortgage
         if i < years_for_mortgage * 12:
-            shares_owned += monthly_payment / price
+            monthly_contribution_usd = monthly_payment_ils / usd_ils_conversion_rates[i]
+            shares_owned += monthly_contribution_usd / price
 
-        # Calculate the total value of the investment
-        investment_value = shares_owned * price
+        # Calculate the total value of the investment in USD
+        investment_value_usd = shares_owned * price
+
+        # Convert the investment value back to ILS using the current exchange rate
+        investment_value_ils = investment_value_usd * usd_ils_conversion_rates[i]
 
         # Store the investment value
-        investment_values.append(investment_value)
+        investment_values_ils.append(investment_value_ils)
 
-    return investment_values
+    return investment_values_ils
 
 
 def graph_better_investment(housing_prices, spy_ticker, starting_year):
@@ -96,6 +123,10 @@ def graph_better_investment(housing_prices, spy_ticker, starting_year):
     plt.plot(housing_prices)
     # plot the spy prices
     plt.plot(spy_ticker)
+
+    # change colors of the lines
+    plt.gca().get_lines()[0].set_color('blue')
+    plt.gca().get_lines()[1].set_color('orange')
 
     # make x-axis show every 5 years from 1994 to 2024
     plt.xticks(range(0, len(housing_prices), 60), range(starting_year, 2025, 5))
@@ -106,6 +137,7 @@ def graph_better_investment(housing_prices, spy_ticker, starting_year):
     plt.xlabel('Year')
     plt.ylabel('Investment Value')
     plt.title('Housing vs SPY Investment')
+
 
     plt.show()
 
@@ -119,6 +151,12 @@ def graph_difference_in_value(housing_prices, spy_ticker, starting_year):
 
     # make x-axis show every 5 years from 1994 to 2024
     plt.xticks(range(0, len(housing_prices), 60), range(starting_year, 2025, 5))
+
+    # change color of zero line to red
+    plt.gca().get_lines()[1].set_color('red')
+    # change colors of the lines
+    plt.gca().get_lines()[0].set_color('blue')
+
     # add a legend
     plt.legend(['SPY - Housing'])
 
@@ -126,7 +164,6 @@ def graph_difference_in_value(housing_prices, spy_ticker, starting_year):
     plt.xlabel('Year')
     plt.ylabel('Investment Value')
     plt.title('Housing vs SPY Investment')
-
     plt.show()
 
 
@@ -151,8 +188,9 @@ def calculate_average_yearly_yield(monthly_prices, investment_type: str):
     print(f'Average yearly yield for {investment_type}: {average_yearly_yield:.2f}%')
 
 
-def main(starting_year=2004, initial_investment=1, borrowed_amount=2, years_for_mortgage=30):
+def main(starting_year=2004, initial_investment=100, borrowed_amount=200, years_for_mortgage=20):
     """contains data from 1994 to 2023"""
+    # TODO: adjust for rent prices and dividend yield
 
     print(f'Starting year: {starting_year}, '
           f'{years_for_mortgage} year mortgage, '
