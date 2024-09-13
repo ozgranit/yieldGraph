@@ -1,6 +1,7 @@
 import pandas as pd
-from pathlib import Path
 import matplotlib.pyplot as plt
+
+from pathlib import Path
 
 
 def get_yahoo_file(file_name):
@@ -37,14 +38,12 @@ def get_USD_to_ILS(spy_prices, starting_year):
 
 
 def read_housing_data():
-    # read housing data and create a graph of the data
     file_name = 'housing_prices.csv'
     file_path = Path.cwd() / 'data' / file_name
     df = pd.read_csv(file_path)
     housing_prices = []
-    # drop year column
     df = df.drop(columns='year')
-    # iterate over rows in df
+
     for index, row in df.iterrows():
         housing_prices.append(row['Jan'])
         housing_prices.append(row['Feb'])
@@ -72,7 +71,7 @@ def invest_in_house(investment, starting_year):
     housing_prices = housing_prices[12*(starting_year - 1994):]
     calculate_average_yearly_yield(housing_prices, 'housing')
 
-    # normalize series as if I invested $investment in starting_year
+    # normalize series as if I invested in starting_year
     housing_prices = [x / housing_prices[0] * investment for x in housing_prices]
 
     return housing_prices
@@ -85,19 +84,14 @@ def invest_in_spy(initial_investment_ils, starting_year, monthly_payment_ils, ye
     spy_prices = spy_prices[12*(starting_year - 1994):]
     calculate_average_yearly_yield(spy_prices, 'SPY')
 
-    # List to hold the value of the investment over time
     investment_values_ils = []
-
     # Example USD/ILS conversion rates (assume 4.4 ILS/USD for months before 12/2003)
     usd_ils_conversion_rates = get_USD_to_ILS(spy_prices, starting_year)
 
     # Convert initial investment to USD using the first exchange rate
     initial_investment_usd = initial_investment_ils / usd_ils_conversion_rates[0]
 
-    # Number of shares you own initially in USD
     shares_owned = initial_investment_usd / spy_prices[0]
-
-    # Iterate over the list of prices and calculate the investment value at each month
     for i, price in enumerate(spy_prices):
 
         # Add monthly contribution in USD only for the time you are paying mortgage
@@ -105,13 +99,9 @@ def invest_in_spy(initial_investment_ils, starting_year, monthly_payment_ils, ye
             monthly_contribution_usd = monthly_payment_ils / usd_ils_conversion_rates[i]
             shares_owned += monthly_contribution_usd / price
 
-        # Calculate the total value of the investment in USD
         investment_value_usd = shares_owned * price
-
         # Convert the investment value back to ILS using the current exchange rate
         investment_value_ils = investment_value_usd * usd_ils_conversion_rates[i]
-
-        # Store the investment value
         investment_values_ils.append(investment_value_ils)
 
     return investment_values_ils
@@ -187,7 +177,7 @@ def calculate_average_yearly_yield(monthly_prices, investment_type: str):
     print(f'Average yearly yield for {investment_type}: {average_yearly_yield:.2f}%')
 
 
-def main(starting_year=2004, initial_investment=100, borrowed_amount=200, years_for_mortgage=20):
+def graph_net_worth(starting_year=2004, initial_investment=100, borrowed_amount=200, years_for_mortgage=20, rent=4000):
     """contains data from 1994 to 2023"""
     # TODO: adjust for rent prices and dividend yield
 
@@ -206,13 +196,29 @@ def main(starting_year=2004, initial_investment=100, borrowed_amount=200, years_
     housing = invest_in_house(initial_investment + borrowed_amount, starting_year)
 
     # monthly mortgage payment can go towards investing in SPY
-    spy = invest_in_spy(initial_investment, starting_year, monthly_payment, years_for_mortgage)
+    spy = invest_in_spy(initial_investment, starting_year, monthly_payment-rent, years_for_mortgage)
 
     # adjust housing investment for debt
     housing = [x - debt for x in housing]
 
     graph_better_investment(housing, spy, starting_year)
     graph_difference_in_value(housing, spy, starting_year)
+
+
+def main():
+    initial_investment = 2_000_000
+    borrowed_amount = 2_000_000
+    years_for_mortgage = 20
+    starting_year = 2004
+    rent = 7000
+
+    graph_net_worth(
+        starting_year=starting_year,
+        years_for_mortgage=years_for_mortgage,
+        initial_investment=initial_investment,
+        borrowed_amount=borrowed_amount,
+        rent=rent
+    )
 
 
 if __name__ == '__main__':
