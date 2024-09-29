@@ -3,9 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hello World</title>
+    <title>Enter Rent</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        #flash {
+            font-size: 2em;
+            color: red;
+            font-weight: bold;
+            visibility: hidden;
+        }
+
+        input[type="number"] {
+            padding: 10px;
+            font-size: 1.2em;
+            margin: 10px 0;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 1.2em;
+            cursor: pointer;
+        }
+    </style>
 </head>
 <body>
-    <h1>Hello World!</h1>
+
+    <h1>Enter Rent:</h1>
+    <input type="number" id="rentInput" placeholder="Enter rent amount" />
+    <button onclick="displayRent()">Run</button>
+
+    <div id="flash"></div>
+
+    <script>
+        function displayRent() {
+            const rentValue = document.getElementById('rentInput').value;
+            const flashElement = document.getElementById('flash');
+
+            if (rentValue) {
+                flashElement.textContent = `$${rentValue}`;
+                flashElement.style.visibility = 'visible';
+
+                let isVisible = true;
+                setInterval(() => {
+                    isVisible = !isVisible;
+                    flashElement.style.visibility = isVisible ? 'visible' : 'hidden';
+                }, 500);
+            } else {
+                flashElement.textContent = 'Please enter a valid number!';
+                flashElement.style.visibility = 'visible';
+            }
+        }
+    </script>
+
 </body>
 </html>
