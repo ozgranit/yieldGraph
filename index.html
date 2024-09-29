@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Enter Rent</title>
+    <title>Investment and Mortgage Calculator</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -13,53 +13,114 @@
             justify-content: center;
             height: 100vh;
             margin: 0;
+            background-color: #f0f4f8;
         }
 
-        #flash {
-            font-size: 2em;
-            color: red;
-            font-weight: bold;
-            visibility: hidden;
+        h1 {
+            color: #333;
+        }
+
+        .input-container {
+            margin: 10px 0;
         }
 
         input[type="number"] {
             padding: 10px;
             font-size: 1.2em;
-            margin: 10px 0;
+            margin: 5px 0;
+            width: 250px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
         }
 
         button {
             padding: 10px 20px;
             font-size: 1.2em;
             cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        #output {
+            margin-top: 30px;
+            font-size: 1.5em;
+            color: #2c3e50;
+            text-align: left;
+        }
+
+        .result-item {
+            margin: 5px 0;
+        }
+
+        .highlight {
+            color: #2980b9;
         }
     </style>
 </head>
 <body>
 
-    <h1>Enter Rent:</h1>
-    <input type="number" id="rentInput" placeholder="Enter rent amount" />
-    <button onclick="displayRent()">Run</button>
+    <h1>Enter Details:</h1>
 
-    <div id="flash"></div>
+    <div class="input-container">
+        <label for="initialInvestment">Initial Investment ($):</label><br>
+        <input type="number" id="initialInvestment" placeholder="Enter initial investment" />
+    </div>
+
+    <div class="input-container">
+        <label for="borrowedAmount">Borrowed Amount ($):</label><br>
+        <input type="number" id="borrowedAmount" placeholder="Enter borrowed amount" />
+    </div>
+
+    <div class="input-container">
+        <label for="yearsForMortgage">Years for Mortgage:</label><br>
+        <input type="number" id="yearsForMortgage" placeholder="Enter years for mortgage" />
+    </div>
+
+    <div class="input-container">
+        <label for="startingYear">Starting Year:</label><br>
+        <input type="number" id="startingYear" placeholder="Enter starting year" />
+    </div>
+
+    <div class="input-container">
+        <label for="rent">Rent ($):</label><br>
+        <input type="number" id="rent" placeholder="Enter rent amount" />
+    </div>
+
+    <button onclick="displayValues()">Run</button>
+
+    <div id="output"></div>
 
     <script>
-        function displayRent() {
-            const rentValue = document.getElementById('rentInput').value;
-            const flashElement = document.getElementById('flash');
+        function displayValues() {
+            const initialInvestment = document.getElementById('initialInvestment').value;
+            const borrowedAmount = document.getElementById('borrowedAmount').value;
+            const yearsForMortgage = document.getElementById('yearsForMortgage').value;
+            const startingYear = document.getElementById('startingYear').value;
+            const rent = document.getElementById('rent').value;
 
-            if (rentValue) {
-                flashElement.textContent = `$${rentValue}`;
-                flashElement.style.visibility = 'visible';
+            const output = document.getElementById('output');
 
-                let isVisible = true;
-                setInterval(() => {
-                    isVisible = !isVisible;
-                    flashElement.style.visibility = isVisible ? 'visible' : 'hidden';
-                }, 500);
+            // Clear previous output
+            output.innerHTML = '';
+
+            // Check if all fields are filled
+            if (initialInvestment && borrowedAmount && yearsForMortgage && startingYear && rent) {
+                output.innerHTML = `
+                    <div class="result-item"><strong>Initial Investment:</strong> <span class="highlight">$${initialInvestment}</span></div>
+                    <div class="result-item"><strong>Borrowed Amount:</strong> <span class="highlight">$${borrowedAmount}</span></div>
+                    <div class="result-item"><strong>Years for Mortgage:</strong> <span class="highlight">${yearsForMortgage} years</span></div>
+                    <div class="result-item"><strong>Starting Year:</strong> <span class="highlight">${startingYear}</span></div>
+                    <div class="result-item"><strong>Rent:</strong> <span class="highlight">$${rent}</span></div>
+                `;
             } else {
-                flashElement.textContent = 'Please enter a valid number!';
-                flashElement.style.visibility = 'visible';
+                output.innerHTML = '<span style="color: red;">Please fill out all fields!</span>';
             }
         }
     </script>
