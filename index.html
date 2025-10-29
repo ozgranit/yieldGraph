@@ -138,29 +138,24 @@
 
             // Calculate investment values for 30 years
             const years = [];
-            const spOnlyValues = [];
             const housingValues = [];
             const rentAndInvestValues = [];
             const monthlyGrowthMultiplier = Math.pow(1 + (yieldRate / 100), 1/12);
             const housingGrowthMultiplier = 1 + (housingYield / 100);
 
             // Initial values
-            let spBalance = investment;
             let rentInvestBalance = investment;
             let remainingMortgage = mortgage;
 
             for (let year = 0; year <= 30; year++) {
                 years.push(year);
 
-                // Scenario 1: Pure S&P investment (no housing, no rent)
-                spOnlyValues.push(investment * Math.pow(1 + (yieldRate / 100), year));
-
-                // Scenario 2: Buy house with mortgage
+                // Scenario 1: Buy house with mortgage
                 const houseValue = (investment + mortgage) * Math.pow(housingGrowthMultiplier, year);
                 const mortgageRemaining = year < 30 ? remainingMortgage : 0;
                 housingValues.push(houseValue - mortgageRemaining);
 
-                // Scenario 3: Rent and invest
+                // Scenario 2: Rent and invest
                 rentAndInvestValues.push(rentInvestBalance);
 
                 // Calculate monthly changes for next year
@@ -191,14 +186,6 @@
                 data: {
                     labels: years,
                     datasets: [{
-                        label: 'S&P Only (No Housing/Rent)',
-                        data: spOnlyValues,
-                        borderColor: 'rgb(75, 192, 192)',
-                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                        tension: 0.1,
-                        fill: false
-                    },
-                    {
                         label: 'Buy House (Net Equity)',
                         data: housingValues,
                         borderColor: 'rgb(255, 99, 132)',
@@ -220,7 +207,7 @@
                     plugins: {
                         title: {
                             display: true,
-                            text: `30-Year Investment Comparison: Buy vs Rent vs Invest`
+                            text: `30-Year Comparison: Buy House vs Rent + Invest`
                         },
                         legend: {
                             display: true
