@@ -50,23 +50,23 @@
     </div>
 
     <div class="input-container">
-        <label for="stockInvestment">Investment:</label>
-        <input type="number" id="stockInvestment" placeholder="Enter amount" step="0.01">
+        <label for="stockInvestment">Investment (Millions):</label>
+        <input type="number" id="stockInvestment" placeholder="e.g., 1.1" step="0.01" value="1.1">
     </div>
 
     <div class="input-container">
-        <label for="mortgageValue">Mortgage Value:</label>
-        <input type="number" id="mortgageValue" placeholder="Enter amount" step="0.01" value="0">
+        <label for="mortgageValue">Mortgage Value (Millions):</label>
+        <input type="number" id="mortgageValue" placeholder="e.g., 2.5" step="0.01" value="2">
     </div>
 
     <div class="input-container">
         <label for="mortgageRate">Mortgage Interest Rate (%):</label>
-        <input type="number" id="mortgageRate" placeholder="e.g., 4" step="0.01" value="4">
+        <input type="number" id="mortgageRate" placeholder="e.g., 4" step="0.01" value="5">
     </div>
 
     <div class="input-container">
         <label for="monthlyRent">Monthly Rent:</label>
-        <input type="number" id="monthlyRent" placeholder="Enter amount" step="0.01" value="0">
+        <input type="number" id="monthlyRent" placeholder="Enter amount" step="0.01" value="8200">
     </div>
 
     <div class="input-container">
@@ -76,7 +76,7 @@
 
     <div class="input-container">
         <label for="expectedYield">Expected S&P Yield (%):</label>
-        <input type="number" id="expectedYield" placeholder="e.g., 7" step="0.01" value="7">
+        <input type="number" id="expectedYield" placeholder="e.g., 7" step="0.01" value="8.2">
     </div>
 
     <div class="input-container">
@@ -101,8 +101,8 @@
         let myChart = null;
 
         function plotGraph() {
-            const investment = parseFloat(document.getElementById('stockInvestment').value);
-            const mortgage = parseFloat(document.getElementById('mortgageValue').value);
+            const investment = parseFloat(document.getElementById('stockInvestment').value) * 1000000; // Convert millions to actual value
+            const mortgage = parseFloat(document.getElementById('mortgageValue').value) * 1000000; // Convert millions to actual value
             const mortgageRate = parseFloat(document.getElementById('mortgageRate').value);
             const monthlyRent = parseFloat(document.getElementById('monthlyRent').value);
             const rentGrowthRate = parseFloat(document.getElementById('rentGrowthRate').value);
