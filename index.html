@@ -326,11 +326,11 @@
 
             // Update summary
             updateSummary(monthlyRent, monthlyMortgagePayment, rentGrowthMultiplier,
-                         housingValues, rentAndInvestValues, mortgage);
+                         housingValues, rentAndInvestValues, mortgage, housingInvestBalance, investment);
         }
 
         function updateSummary(monthlyRent, monthlyMortgagePayment, rentGrowthMultiplier,
-                              housingValues, rentAndInvestValues, mortgage) {
+                              housingValues, rentAndInvestValues, mortgage, housingInvestBalance, initialInvestment) {
             const year30Rent = monthlyRent * Math.pow(rentGrowthMultiplier, 30);
             const initialDifference = monthlyRent - monthlyMortgagePayment;
             const year30Difference = year30Rent - monthlyMortgagePayment;
@@ -413,9 +413,9 @@
                 switchInfo;
 
             // Get initial investment from global scope (passed via recalculation)
-            const initialInvestment = parseFloat(document.getElementById('stockInvestment').value) * 1000000;
+            // Calculate final house value at year 30
             const houseValue = (initialInvestment + mortgage) * Math.pow(1 + (parseFloat(document.getElementById('housingYield').value) / 100), 30);
-            const housingStockValue = finalHousingValue - houseValue; // Stock portion of housing scenario
+            const housingStockValue = housingInvestBalance; // Use the actual accumulated stock balance
 
             document.getElementById('strategyInfo').innerHTML =
                 `<strong>Final Net Worth (Year 30):</strong><br><br>` +
