@@ -55,6 +55,11 @@
     </div>
 
     <div class="input-container">
+        <label for="mortgageValue">Mortgage Value:</label>
+        <input type="number" id="mortgageValue" placeholder="Enter amount" step="0.01" value="0">
+    </div>
+
+    <div class="input-container">
         <label for="expectedYield">Expected S&P Yield (%):</label>
         <input type="number" id="expectedYield" placeholder="e.g., 7" step="0.01" value="7">
     </div>
@@ -75,11 +80,17 @@
 
         function plotGraph() {
             const investment = parseFloat(document.getElementById('stockInvestment').value);
+            const mortgage = parseFloat(document.getElementById('mortgageValue').value);
             const yieldRate = parseFloat(document.getElementById('expectedYield').value);
             const housingYield = parseFloat(document.getElementById('housingYield').value);
 
             if (isNaN(investment) || investment <= 0) {
                 alert('Please enter a valid investment amount');
+                return;
+            }
+
+            if (isNaN(mortgage) || mortgage < 0) {
+                alert('Please enter a valid mortgage value');
                 return;
             }
 
@@ -103,7 +114,7 @@
             for (let year = 0; year <= 30; year++) {
                 years.push(year);
                 values.push(investment * Math.pow(growthMultiplier, year));
-                housingValues.push(investment * Math.pow(housingGrowthMultiplier, year));
+                housingValues.push((investment + mortgage) * Math.pow(housingGrowthMultiplier, year));
             }
 
             // Destroy existing chart if it exists
@@ -118,7 +129,7 @@
                 data: {
                     labels: years,
                     datasets: [{
-                        label: 'Investment Value ($)',
+                        label: 'Net Investment Value ($)',
                         data: values,
                         borderColor: 'rgb(75, 192, 192)',
                         backgroundColor: 'rgba(75, 192, 192, 0.2)',
