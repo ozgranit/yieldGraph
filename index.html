@@ -254,16 +254,25 @@
                             remainingMortgage = Math.max(0, remainingMortgage - principalPayment);
                         }
 
-                        // Invest the difference between rent and mortgage
+                        // Calculate the difference and invest it
                         const monthlyDifference = currentMonthlyRent - monthlyMortgagePayment;
+
                         if (monthlyDifference > 0) {
-                            // Rent higher: homeowner invests difference
+                            // Rent is higher than mortgage
+                            // Homeowner saves money, invests the difference
                             housingInvestBalance = (housingInvestBalance + monthlyDifference) * monthlyGrowthMultiplier;
-                            rentInvestBalance *= monthlyGrowthMultiplier;
+                            // Renter just grows existing balance (already paid rent, no extra to invest)
+                            rentInvestBalance = rentInvestBalance * monthlyGrowthMultiplier;
+                        } else if (monthlyDifference < 0) {
+                            // Mortgage is higher than rent
+                            // Renter saves money, invests the difference (absolute value)
+                            rentInvestBalance = (rentInvestBalance + Math.abs(monthlyDifference)) * monthlyGrowthMultiplier;
+                            // Homeowner just grows existing balance (already paid mortgage, no extra to invest)
+                            housingInvestBalance = housingInvestBalance * monthlyGrowthMultiplier;
                         } else {
-                            // Mortgage higher: renter invests difference
-                            rentInvestBalance = (rentInvestBalance - monthlyDifference) * monthlyGrowthMultiplier;
-                            housingInvestBalance *= monthlyGrowthMultiplier;
+                            // Rent equals mortgage - both just grow their existing balances
+                            rentInvestBalance = rentInvestBalance * monthlyGrowthMultiplier;
+                            housingInvestBalance = housingInvestBalance * monthlyGrowthMultiplier;
                         }
                     }
                     currentMonthlyRent *= rentGrowthMultiplier;
