@@ -284,22 +284,67 @@
             const differenceInfo = document.getElementById('differenceInfo');
             const strategyInfo = document.getElementById('strategyInfo');
 
+            // Calculate Year 1 and Year 30 rent
+            const year30Rent = monthlyRent * Math.pow(rentGrowthMultiplier, 30);
+            const initialDifference = monthlyRent - monthlyMortgagePayment;
+            const year30Difference = year30Rent - monthlyMortgagePayment;
+
+            // Find when monthly cost advantage switches (rent surpasses mortgage or vice versa)
+            let costSwitchYear = null;
+            if (initialDifference * year30Difference < 0) { // Signs are different, meaning there's a switch
+                for (let y = 1; y <= 30; y++) {
+                    const rentAtYear = monthlyRent * Math.pow(rentGrowthMultiplier, y);
+                    const diffAtYear = rentAtYear - monthlyMortgagePayment;
+                    if ((initialDifference < 0 && diffAtYear >= 0) || (initialDifference > 0 && diffAtYear <= 0)) {
+                        costSwitchYear = y;
+                        break;
+                    }
+                }
+            }
+
+            // Find when net worth advantage switches
+            let wealthSwitchYear = null;
+            let previousDiff = housingValues[0] - rentAndInvestValues[0];
+            for (let y = 1; y <= 30; y++) {
+                const currentDiff = housingValues[y] - rentAndInvestValues[y];
+                if (previousDiff * currentDiff < 0) { // Sign changed
+                    wealthSwitchYear = y;
+                    break;
+                }
+                previousDiff = currentDiff;
+            }
+
+            // Get final net worth values
+            const finalHousingValue = housingValues[housingValues.length - 1];
+            const finalRentValue = rentAndInvestValues[rentAndInvestValues.length - 1];
+            const winner = finalHousingValue > finalRentValue ? 'Buy House' : 'Rent + Invest';
+            const advantage = Math.abs(finalHousingValue - finalRentValue);
+
             if (mortgage > 0) {
-                mortgageInfo.innerHTML = `<strong>Monthly Mortgage Payment:</strong> ₪${Math.round(monthlyMortgagePayment).toLocaleString()}`;
+                mortgageInfo.innerHTML = `<strong>Monthly Mortgage Payment (Fixed):</strong> ₪${Math.round(monthlyMortgagePayment).toLocaleString()}`;
             } else {
                 mortgageInfo.innerHTML = `<strong>Monthly Mortgage Payment:</strong> ₪0 (no mortgage)`;
             }
 
-            if (monthlyDifference > 0) {
-                differenceInfo.innerHTML = `<strong>Monthly Difference:</strong> Rent is ₪${Math.round(Math.abs(monthlyDifference)).toLocaleString()} higher than mortgage`;
-                strategyInfo.innerHTML = `<strong>Who Invests the Difference:</strong> Homeowner invests ₪${Math.round(Math.abs(monthlyDifference)).toLocaleString()}/month in S&P 500`;
-            } else if (monthlyDifference < 0) {
-                differenceInfo.innerHTML = `<strong>Monthly Difference:</strong> Mortgage is ₪${Math.round(Math.abs(monthlyDifference)).toLocaleString()} higher than rent`;
-                strategyInfo.innerHTML = `<strong>Who Invests the Difference:</strong> Renter invests ₪${Math.round(Math.abs(monthlyDifference)).toLocaleString()}/month in S&P 500`;
-            } else {
-                differenceInfo.innerHTML = `<strong>Monthly Difference:</strong> Rent and mortgage are equal`;
-                strategyInfo.innerHTML = `<strong>Who Invests the Difference:</strong> No additional monthly investment`;
+            let switchInfo = '';
+            if (costSwitchYear) {
+                const switchDirection = initialDifference < 0 ? 'Rent becomes higher than mortgage' : 'Mortgage becomes higher than rent';
+                switchInfo = `<br><strong>Cost Switch Point:</strong> Year ${costSwitchYear} - ${switchDirection}`;
             }
+            if (wealthSwitchYear) {
+                const wealthDirection = housingValues[0] > rentAndInvestValues[0] ? 'Rent + Invest overtakes Buy House' : 'Buy House overtakes Rent + Invest';
+                switchInfo += `<br><strong>Wealth Switch Point:</strong> Year ${wealthSwitchYear} - ${wealthDirection}`;
+            }
+
+            differenceInfo.innerHTML = `<strong>Monthly Rent:</strong> Year 1: ₪${Math.round(monthlyRent).toLocaleString()} → Year 30: ₪${Math.round(year30Rent).toLocaleString()}<br>` +
+                                       `<strong>Initial Difference:</strong> ${initialDifference >= 0 ? 'Rent is ₪' + Math.round(Math.abs(initialDifference)).toLocaleString() + ' higher' : 'Mortgage is ₪' + Math.round(Math.abs(initialDifference)).toLocaleString() + ' higher'}<br>` +
+                                       `<strong>Year 30 Difference:</strong> ${year30Difference >= 0 ? 'Rent is ₪' + Math.round(Math.abs(year30Difference)).toLocaleString() + ' higher' : 'Mortgage is ₪' + Math.round(Math.abs(year30Difference)).toLocaleString() + ' higher'}` +
+                                       switchInfo;
+
+            strategyInfo.innerHTML = `<strong>Final Net Worth (Year 30):</strong><br>` +
+                                    `• Buy House: ₪${Math.round(finalHousingValue).toLocaleString()}<br>` +
+                                    `• Rent + Invest: ₪${Math.round(finalRentValue).toLocaleString()}<br>` +
+                                    `<strong style="color: #2e7d32;">Winner: ${winner}</strong> (₪${Math.round(advantage).toLocaleString()} advantage)`;
 
             summaryDiv.style.display = 'block';
         }
