@@ -59,6 +59,11 @@
         <input type="number" id="expectedYield" placeholder="e.g., 7" step="0.01" value="7">
     </div>
 
+    <div class="input-container">
+        <label for="housingYield">Expected Housing Yield (%):</label>
+        <input type="number" id="housingYield" placeholder="e.g., 5.4" step="0.01" value="5.4">
+    </div>
+
     <button onclick="plotGraph()">Calculate & Plot</button>
 
     <div id="chartContainer">
@@ -71,6 +76,7 @@
         function plotGraph() {
             const investment = parseFloat(document.getElementById('stockInvestment').value);
             const yieldRate = parseFloat(document.getElementById('expectedYield').value);
+            const housingYield = parseFloat(document.getElementById('housingYield').value);
 
             if (isNaN(investment) || investment <= 0) {
                 alert('Please enter a valid investment amount');
@@ -78,18 +84,26 @@
             }
 
             if (isNaN(yieldRate) || yieldRate <= 0) {
-                alert('Please enter a valid yield percentage');
+                alert('Please enter a valid S&P yield percentage');
+                return;
+            }
+
+            if (isNaN(housingYield) || housingYield <= 0) {
+                alert('Please enter a valid housing yield percentage');
                 return;
             }
 
             // Calculate investment values for 30 years with the specified annual growth
             const years = [];
             const values = [];
+            const housingValues = [];
             const growthMultiplier = 1 + (yieldRate / 100);
+            const housingGrowthMultiplier = 1 + (housingYield / 100);
 
             for (let year = 0; year <= 30; year++) {
                 years.push(year);
                 values.push(investment * Math.pow(growthMultiplier, year));
+                housingValues.push(investment * Math.pow(housingGrowthMultiplier, year));
             }
 
             // Destroy existing chart if it exists
@@ -110,6 +124,14 @@
                         backgroundColor: 'rgba(75, 192, 192, 0.2)',
                         tension: 0.1,
                         fill: true
+                    },
+                    {
+                        label: 'Housing Investment Value ($)',
+                        data: housingValues,
+                        borderColor: 'rgb(255, 99, 132)',
+                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                        tension: 0.1,
+                        fill: true
                     }]
                 },
                 options: {
@@ -117,7 +139,7 @@
                     plugins: {
                         title: {
                             display: true,
-                            text: `30-Year Investment Growth at ${yieldRate}% Annual Return`
+                            text: `30-Year Investment Growth`
                         },
                         legend: {
                             display: true
@@ -137,7 +159,7 @@
                             },
                             ticks: {
                                 callback: function(value) {
-                                    return '$' + value.toFixed(2);
+                                    return '$' + Math.round(value).toLocaleString();
                                 }
                             }
                         }
