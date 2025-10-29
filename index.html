@@ -359,11 +359,28 @@
                 previousDiff = currentDiff;
             }
 
-            // Calculate winner
+            // Calculate winner and detailed breakdown
             const finalHousingValue = housingValues[30];
             const finalRentValue = rentAndInvestValues[30];
             const winner = finalHousingValue > finalRentValue ? 'Buy House' : 'Rent + Invest';
             const advantage = Math.abs(finalHousingValue - finalRentValue);
+
+            // Calculate total monthly investments made
+            let totalHousingInvestment = 0;
+            let totalRentInvestment = 0;
+            let currentRent = monthlyRent;
+
+            for (let y = 0; y < 30; y++) {
+                for (let m = 0; m < 12; m++) {
+                    const diff = currentRent - monthlyMortgagePayment;
+                    if (diff > 0) {
+                        totalHousingInvestment += diff;
+                    } else if (diff < 0) {
+                        totalRentInvestment += Math.abs(diff);
+                    }
+                }
+                currentRent *= rentGrowthMultiplier;
+            }
 
             // Display summary
             const formatCurrency = val => '₪' + Math.round(val).toLocaleString();
@@ -390,11 +407,21 @@
                 `<strong>Year 30 Difference:</strong> ${formatDiff(year30Difference, 'Rent', 'Mortgage')}` +
                 switchInfo;
 
+            // Get initial investment from global scope (passed via recalculation)
+            const initialInvestment = parseFloat(document.getElementById('stockInvestment').value) * 1000000;
+            const houseValue = (initialInvestment + mortgage) * Math.pow(1 + (parseFloat(document.getElementById('housingYield').value) / 100), 30);
+            const housingStockValue = finalHousingValue - (houseValue - 0); // Mortgage paid off at year 30
+
             document.getElementById('strategyInfo').innerHTML =
-                `<strong>Final Net Worth (Year 30):</strong><br>` +
-                `• Buy House: ${formatCurrency(finalHousingValue)}<br>` +
-                `• Rent + Invest: ${formatCurrency(finalRentValue)}<br>` +
-                `<strong style="color: #2e7d32;">Winner: ${winner}</strong> (${formatCurrency(advantage)} advantage)`;
+                `<strong>Final Net Worth (Year 30):</strong><br><br>` +
+                `<strong>🏠 Buy House:</strong> ${formatCurrency(finalHousingValue)}<br>` +
+                `&nbsp;&nbsp;&nbsp;• House Value: ${formatCurrency(houseValue)}<br>` +
+                `&nbsp;&nbsp;&nbsp;• Stock Portfolio: ${formatCurrency(housingStockValue)}<br>` +
+                `&nbsp;&nbsp;&nbsp;• Additional Invested: ${formatCurrency(totalHousingInvestment)}<br><br>` +
+                `<strong>📈 Rent + Invest:</strong> ${formatCurrency(finalRentValue)}<br>` +
+                `&nbsp;&nbsp;&nbsp;• Stock Portfolio: ${formatCurrency(finalRentValue)}<br>` +
+                `&nbsp;&nbsp;&nbsp;• Additional Invested: ${formatCurrency(totalRentInvestment)}<br><br>` +
+                `<strong style="color: #2e7d32;">🏆 Winner: ${winner}</strong> (${formatCurrency(advantage)} advantage)`;
 
             document.getElementById('calculationSummary').style.display = 'block';
         }
