@@ -3,127 +3,131 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Investment and Mortgage Calculator</title>
+    <title>Stock Market Investment Calculator</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            margin: 0;
-            background-color: #f0f4f8;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
         }
-
-        h1 {
-            color: #333;
-        }
-
         .input-container {
-            margin: 10px 0;
+            margin-bottom: 20px;
         }
-
-        input[type="number"] {
-            padding: 10px;
-            font-size: 1.2em;
-            margin: 5px 0;
-            width: 250px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
+        label {
+            display: inline-block;
+            width: 200px;
+            font-weight: bold;
         }
-
+        input {
+            padding: 5px;
+            width: 150px;
+        }
         button {
             padding: 10px 20px;
-            font-size: 1.2em;
-            cursor: pointer;
             background-color: #4CAF50;
             color: white;
             border: none;
-            border-radius: 5px;
-            margin-top: 20px;
+            cursor: pointer;
+            margin-top: 10px;
         }
-
         button:hover {
             background-color: #45a049;
         }
-
-        #output {
+        #chartContainer {
             margin-top: 30px;
-            font-size: 1.5em;
-            color: #2c3e50;
-            text-align: left;
-        }
-
-        .result-item {
-            margin: 5px 0;
-        }
-
-        .highlight {
-            color: #2980b9;
         }
     </style>
 </head>
 <body>
-
-    <h1>Enter Details:</h1>
-
-    <div class="input-container">
-        <label for="initialInvestment">Initial Investment ($):</label><br>
-        <input type="number" id="initialInvestment" placeholder="Enter initial investment" />
-    </div>
+    <h1>Stock Market Investment Calculator</h1>
 
     <div class="input-container">
-        <label for="borrowedAmount">Borrowed Amount ($):</label><br>
-        <input type="number" id="borrowedAmount" placeholder="Enter borrowed amount" />
+        <label for="stockInvestment">Stock Market Investment:</label>
+        <input type="number" id="stockInvestment" placeholder="Enter amount" step="0.01">
     </div>
 
-    <div class="input-container">
-        <label for="yearsForMortgage">Years for Mortgage:</label><br>
-        <input type="number" id="yearsForMortgage" placeholder="Enter years for mortgage" />
+    <button onclick="plotGraph()">Calculate & Plot</button>
+
+    <div id="chartContainer">
+        <canvas id="investmentChart"></canvas>
     </div>
-
-    <div class="input-container">
-        <label for="startingYear">Starting Year:</label><br>
-        <input type="number" id="startingYear" placeholder="Enter starting year" />
-    </div>
-
-    <div class="input-container">
-        <label for="rent">Rent ($):</label><br>
-        <input type="number" id="rent" placeholder="Enter rent amount" />
-    </div>
-
-    <button onclick="displayValues()">Run</button>
-
-    <div id="output"></div>
 
     <script>
-        function displayValues() {
-            const initialInvestment = document.getElementById('initialInvestment').value;
-            const borrowedAmount = document.getElementById('borrowedAmount').value;
-            const yearsForMortgage = document.getElementById('yearsForMortgage').value;
-            const startingYear = document.getElementById('startingYear').value;
-            const rent = document.getElementById('rent').value;
+        let myChart = null;
 
-            const output = document.getElementById('output');
+        function plotGraph() {
+            const investment = parseFloat(document.getElementById('stockInvestment').value);
 
-            // Clear previous output
-            output.innerHTML = '';
-
-            // Check if all fields are filled
-            if (initialInvestment && borrowedAmount && yearsForMortgage && startingYear && rent) {
-                output.innerHTML = `
-                    <div class="result-item"><strong>Initial Investment:</strong> <span class="highlight">$${initialInvestment}</span></div>
-                    <div class="result-item"><strong>Borrowed Amount:</strong> <span class="highlight">$${borrowedAmount}</span></div>
-                    <div class="result-item"><strong>Years for Mortgage:</strong> <span class="highlight">${yearsForMortgage} years</span></div>
-                    <div class="result-item"><strong>Starting Year:</strong> <span class="highlight">${startingYear}</span></div>
-                    <div class="result-item"><strong>Rent:</strong> <span class="highlight">$${rent}</span></div>
-                `;
-            } else {
-                output.innerHTML = '<span style="color: red;">Please fill out all fields!</span>';
+            if (isNaN(investment) || investment <= 0) {
+                alert('Please enter a valid investment amount');
+                return;
             }
+
+            // Calculate investment values for 30 years with 7% annual growth
+            const years = [];
+            const values = [];
+
+            for (let year = 0; year <= 30; year++) {
+                years.push(year);
+                values.push(investment * Math.pow(1.07, year));
+            }
+
+            // Destroy existing chart if it exists
+            if (myChart) {
+                myChart.destroy();
+            }
+
+            // Create new chart
+            const ctx = document.getElementById('investmentChart').getContext('2d');
+            myChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: years,
+                    datasets: [{
+                        label: 'Investment Value ($)',
+                        data: values,
+                        borderColor: 'rgb(75, 192, 192)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        tension: 0.1,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: '30-Year Investment Growth at 7% Annual Return'
+                        },
+                        legend: {
+                            display: true
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Years'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Value ($)'
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + value.toFixed(2);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
         }
     </script>
-
 </body>
 </html>
+
