@@ -178,21 +178,21 @@
 
                 // Scenario 1: Buy house with mortgage
                 const houseValue = (investment + mortgage) * Math.pow(housingGrowthMultiplier, year);
-                const mortgageRemaining = year < 30 ? remainingMortgage : 0;
+                const mortgageRemaining = remainingMortgage > 0 ? remainingMortgage : 0;
                 // Net worth = house equity + S&P balance (from investing difference if rent > mortgage)
                 housingValues.push(houseValue - mortgageRemaining + housingInvestBalance);
 
                 // Scenario 2: Rent and invest
                 rentAndInvestValues.push(rentInvestBalance);
 
-                // Calculate monthly changes for next year
+                // Calculate monthly changes for next year (but not after year 30)
                 if (year < 30) {
                     for (let month = 0; month < 12; month++) {
                         // Pay down mortgage principal
-                        if (mortgage > 0) {
+                        if (remainingMortgage > 0) {
                             const interestPayment = remainingMortgage * monthlyMortgageRate;
                             const principalPayment = monthlyMortgagePayment - interestPayment;
-                            remainingMortgage -= principalPayment;
+                            remainingMortgage = Math.max(0, remainingMortgage - principalPayment); // Ensure it doesn't go negative
                         }
 
                         // Calculate current month's difference (rent grows, mortgage is fixed)
