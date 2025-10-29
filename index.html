@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stock Market Investment Calculator</title>
+    <title>Buy vs Rent Investment Calculator</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body {
@@ -41,7 +41,7 @@
     </style>
 </head>
 <body>
-    <h1>Stock Market Investment Calculator</h1>
+    <h1>Buy vs Rent Investment Calculator</h1>
 
     <div class="input-container">
         <p style="background-color: #f0f0f0; padding: 15px; border-radius: 5px; font-size: 14px;">
@@ -101,128 +101,93 @@
         let myChart = null;
 
         function plotGraph() {
-            const investment = parseFloat(document.getElementById('stockInvestment').value) * 1000000; // Convert millions to actual value
-            const mortgage = parseFloat(document.getElementById('mortgageValue').value) * 1000000; // Convert millions to actual value
+            // Parse and convert inputs
+            const investment = parseFloat(document.getElementById('stockInvestment').value) * 1000000;
+            const mortgage = parseFloat(document.getElementById('mortgageValue').value) * 1000000;
             const mortgageRate = parseFloat(document.getElementById('mortgageRate').value);
             const monthlyRent = parseFloat(document.getElementById('monthlyRent').value);
             const rentGrowthRate = parseFloat(document.getElementById('rentGrowthRate').value);
             const yieldRate = parseFloat(document.getElementById('expectedYield').value);
             const housingYield = parseFloat(document.getElementById('housingYield').value);
 
+            // Validate inputs
             if (isNaN(investment) || investment <= 0) {
                 alert('Please enter a valid investment amount');
                 return;
             }
-
-            if (isNaN(mortgage) || mortgage < 0) {
-                alert('Please enter a valid mortgage value');
+            if (isNaN(mortgage) || mortgage < 0 || isNaN(mortgageRate) || mortgageRate < 0) {
+                alert('Please enter valid mortgage values');
+                return;
+            }
+            if (isNaN(monthlyRent) || monthlyRent < 0 || isNaN(rentGrowthRate) || rentGrowthRate < 0) {
+                alert('Please enter valid rent values');
+                return;
+            }
+            if (isNaN(yieldRate) || yieldRate <= 0 || isNaN(housingYield) || housingYield <= 0) {
+                alert('Please enter valid yield percentages');
                 return;
             }
 
-            if (isNaN(mortgageRate) || mortgageRate < 0) {
-                alert('Please enter a valid mortgage interest rate');
-                return;
-            }
-
-            if (isNaN(monthlyRent) || monthlyRent < 0) {
-                alert('Please enter a valid monthly rent amount');
-                return;
-            }
-
-            if (isNaN(rentGrowthRate) || rentGrowthRate < 0) {
-                alert('Please enter a valid rent growth rate');
-                return;
-            }
-
-            if (isNaN(yieldRate) || yieldRate <= 0) {
-                alert('Please enter a valid S&P yield percentage');
-                return;
-            }
-
-            if (isNaN(housingYield) || housingYield <= 0) {
-                alert('Please enter a valid housing yield percentage');
-                return;
-            }
-
-            // Calculate monthly mortgage payment using amortization formula
+            // Calculate constants
             const monthlyMortgageRate = mortgageRate / 100 / 12;
-            const numPayments = 30 * 12; // 30 years
-            let monthlyMortgagePayment = 0;
+            const numPayments = 30 * 12;
+            const monthlyMortgagePayment = (mortgage > 0 && mortgageRate > 0)
+                ? mortgage * (monthlyMortgageRate * Math.pow(1 + monthlyMortgageRate, numPayments)) /
+                  (Math.pow(1 + monthlyMortgageRate, numPayments) - 1)
+                : 0;
 
-            if (mortgage > 0 && mortgageRate > 0) {
-                monthlyMortgagePayment = mortgage * (monthlyMortgageRate * Math.pow(1 + monthlyMortgageRate, numPayments)) /
-                                        (Math.pow(1 + monthlyMortgageRate, numPayments) - 1);
-            }
-
-            // Calculate the difference between rent and mortgage
-            const monthlyDifference = monthlyRent - monthlyMortgagePayment;
-
-            // Calculate investment values for 30 years
-            const years = [];
-            const housingValues = [];
-            const rentAndInvestValues = [];
             const monthlyGrowthMultiplier = Math.pow(1 + (yieldRate / 100), 1/12);
             const housingGrowthMultiplier = 1 + (housingYield / 100);
             const rentGrowthMultiplier = 1 + (rentGrowthRate / 100);
 
-            // Initial values
-            // Renter: starts with initial investment in S&P
+            // Initialize tracking variables
+            const years = [];
+            const housingValues = [];
+            const rentAndInvestValues = [];
             let rentInvestBalance = investment;
-            // Homeowner: starts with $0 in S&P (all goes to down payment)
             let housingInvestBalance = 0;
             let remainingMortgage = mortgage;
-            let currentMonthlyRent = monthlyRent; // Rent starts at initial value and grows annually
+            let currentMonthlyRent = monthlyRent;
 
+            // Calculate 30-year projections
             for (let year = 0; year <= 30; year++) {
                 years.push(year);
 
-                // Scenario 1: Buy house with mortgage
+                // Calculate house value and net equity
                 const houseValue = (investment + mortgage) * Math.pow(housingGrowthMultiplier, year);
-                const mortgageRemaining = remainingMortgage > 0 ? remainingMortgage : 0;
-                // Net worth = house equity + S&P balance (from investing difference if rent > mortgage)
-                housingValues.push(houseValue - mortgageRemaining + housingInvestBalance);
+                housingValues.push(houseValue - remainingMortgage + housingInvestBalance);
 
-                // Scenario 2: Rent and invest
+                // Record renter's balance
                 rentAndInvestValues.push(rentInvestBalance);
 
-                // Calculate monthly changes for next year (but not after year 30)
+                // Process monthly changes for the next year
                 if (year < 30) {
                     for (let month = 0; month < 12; month++) {
-                        // Pay down mortgage principal
+                        // Pay down mortgage
                         if (remainingMortgage > 0) {
-                            const interestPayment = remainingMortgage * monthlyMortgageRate;
-                            const principalPayment = monthlyMortgagePayment - interestPayment;
-                            remainingMortgage = Math.max(0, remainingMortgage - principalPayment); // Ensure it doesn't go negative
+                            const principalPayment = monthlyMortgagePayment - (remainingMortgage * monthlyMortgageRate);
+                            remainingMortgage = Math.max(0, remainingMortgage - principalPayment);
                         }
 
-                        // Calculate current month's difference (rent grows, mortgage is fixed)
+                        // Invest the difference between rent and mortgage
                         const monthlyDifference = currentMonthlyRent - monthlyMortgagePayment;
-
-                        // Whoever pays less invests the difference
                         if (monthlyDifference > 0) {
-                            // Rent is higher than mortgage: homeowner invests the difference
+                            // Rent higher: homeowner invests difference
                             housingInvestBalance = (housingInvestBalance + monthlyDifference) * monthlyGrowthMultiplier;
-                            // Renter just grows existing balance (rent is already their cost)
-                            rentInvestBalance = rentInvestBalance * monthlyGrowthMultiplier;
+                            rentInvestBalance *= monthlyGrowthMultiplier;
                         } else {
-                            // Mortgage is higher than rent: renter invests the difference
+                            // Mortgage higher: renter invests difference
                             rentInvestBalance = (rentInvestBalance - monthlyDifference) * monthlyGrowthMultiplier;
-                            // Homeowner just grows existing balance (mortgage is already their cost)
-                            housingInvestBalance = housingInvestBalance * monthlyGrowthMultiplier;
+                            housingInvestBalance *= monthlyGrowthMultiplier;
                         }
                     }
-
-                    // Grow rent annually
-                    currentMonthlyRent = currentMonthlyRent * rentGrowthMultiplier;
+                    currentMonthlyRent *= rentGrowthMultiplier;
                 }
             }
 
-            // Destroy existing chart if it exists
-            if (myChart) {
-                myChart.destroy();
-            }
+            // Create/update chart
+            if (myChart) myChart.destroy();
 
-            // Create new chart
             const ctx = document.getElementById('investmentChart').getContext('2d');
             myChart = new Chart(ctx, {
                 type: 'line',
@@ -235,8 +200,7 @@
                         backgroundColor: 'rgba(255, 99, 132, 0.2)',
                         tension: 0.1,
                         fill: false
-                    },
-                    {
+                    }, {
                         label: 'Rent + Invest in S&P',
                         data: rentAndInvestValues,
                         borderColor: 'rgb(153, 102, 255)',
@@ -250,103 +214,95 @@
                     plugins: {
                         title: {
                             display: true,
-                            text: `30-Year Comparison: Buy House vs Rent + Invest`
+                            text: '30-Year Comparison: Buy House vs Rent + Invest'
                         },
-                        legend: {
-                            display: true
-                        }
+                        legend: { display: true }
                     },
                     scales: {
-                        x: {
-                            title: {
-                                display: true,
-                                text: 'Years'
-                            }
-                        },
+                        x: { title: { display: true, text: 'Years' } },
                         y: {
-                            title: {
-                                display: true,
-                                text: 'Net Worth (NIS)'
-                            },
+                            title: { display: true, text: 'Net Worth (NIS)' },
                             ticks: {
-                                callback: function(value) {
-                                    return '₪' + Math.round(value).toLocaleString();
-                                }
+                                callback: value => '₪' + Math.round(value).toLocaleString()
                             }
                         }
                     }
                 }
             });
 
-            // Update calculation summary
-            const summaryDiv = document.getElementById('calculationSummary');
-            const mortgageInfo = document.getElementById('mortgagePaymentInfo');
-            const differenceInfo = document.getElementById('differenceInfo');
-            const strategyInfo = document.getElementById('strategyInfo');
+            // Update summary
+            updateSummary(monthlyRent, monthlyMortgagePayment, rentGrowthMultiplier,
+                         housingValues, rentAndInvestValues, mortgage);
+        }
 
-            // Calculate Year 1 and Year 30 rent
+        function updateSummary(monthlyRent, monthlyMortgagePayment, rentGrowthMultiplier,
+                              housingValues, rentAndInvestValues, mortgage) {
             const year30Rent = monthlyRent * Math.pow(rentGrowthMultiplier, 30);
             const initialDifference = monthlyRent - monthlyMortgagePayment;
             const year30Difference = year30Rent - monthlyMortgagePayment;
 
-            // Find when monthly cost advantage switches (rent surpasses mortgage or vice versa)
+            // Find switch points
             let costSwitchYear = null;
-            if (initialDifference * year30Difference < 0) { // Signs are different, meaning there's a switch
+            if (initialDifference * year30Difference < 0) {
                 for (let y = 1; y <= 30; y++) {
                     const rentAtYear = monthlyRent * Math.pow(rentGrowthMultiplier, y);
-                    const diffAtYear = rentAtYear - monthlyMortgagePayment;
-                    if ((initialDifference < 0 && diffAtYear >= 0) || (initialDifference > 0 && diffAtYear <= 0)) {
+                    if ((initialDifference < 0 && rentAtYear >= monthlyMortgagePayment) ||
+                        (initialDifference > 0 && rentAtYear <= monthlyMortgagePayment)) {
                         costSwitchYear = y;
                         break;
                     }
                 }
             }
 
-            // Find when net worth advantage switches
             let wealthSwitchYear = null;
             let previousDiff = housingValues[0] - rentAndInvestValues[0];
             for (let y = 1; y <= 30; y++) {
                 const currentDiff = housingValues[y] - rentAndInvestValues[y];
-                if (previousDiff * currentDiff < 0) { // Sign changed
+                if (previousDiff * currentDiff < 0) {
                     wealthSwitchYear = y;
                     break;
                 }
                 previousDiff = currentDiff;
             }
 
-            // Get final net worth values
-            const finalHousingValue = housingValues[housingValues.length - 1];
-            const finalRentValue = rentAndInvestValues[rentAndInvestValues.length - 1];
+            // Calculate winner
+            const finalHousingValue = housingValues[30];
+            const finalRentValue = rentAndInvestValues[30];
             const winner = finalHousingValue > finalRentValue ? 'Buy House' : 'Rent + Invest';
             const advantage = Math.abs(finalHousingValue - finalRentValue);
 
-            if (mortgage > 0) {
-                mortgageInfo.innerHTML = `<strong>Monthly Mortgage Payment (Fixed):</strong> ₪${Math.round(monthlyMortgagePayment).toLocaleString()}`;
-            } else {
-                mortgageInfo.innerHTML = `<strong>Monthly Mortgage Payment:</strong> ₪0 (no mortgage)`;
-            }
+            // Display summary
+            const formatCurrency = val => '₪' + Math.round(val).toLocaleString();
+            const formatDiff = (diff, label1, label2) =>
+                diff >= 0 ? `${label1} is ${formatCurrency(Math.abs(diff))} higher`
+                          : `${label2} is ${formatCurrency(Math.abs(diff))} higher`;
+
+            document.getElementById('mortgagePaymentInfo').innerHTML =
+                `<strong>Monthly Mortgage Payment (Fixed):</strong> ${mortgage > 0 ? formatCurrency(monthlyMortgagePayment) : '₪0 (no mortgage)'}`;
 
             let switchInfo = '';
             if (costSwitchYear) {
-                const switchDirection = initialDifference < 0 ? 'Rent becomes higher than mortgage' : 'Mortgage becomes higher than rent';
-                switchInfo = `<br><strong>Cost Switch Point:</strong> Year ${costSwitchYear} - ${switchDirection}`;
+                switchInfo = `<br><strong>Cost Switch Point:</strong> Year ${costSwitchYear} - ${
+                    initialDifference < 0 ? 'Rent becomes higher than mortgage' : 'Mortgage becomes higher than rent'}`;
             }
             if (wealthSwitchYear) {
-                const wealthDirection = housingValues[0] > rentAndInvestValues[0] ? 'Rent + Invest overtakes Buy House' : 'Buy House overtakes Rent + Invest';
-                switchInfo += `<br><strong>Wealth Switch Point:</strong> Year ${wealthSwitchYear} - ${wealthDirection}`;
+                switchInfo += `<br><strong>Wealth Switch Point:</strong> Year ${wealthSwitchYear} - ${
+                    housingValues[0] > rentAndInvestValues[0] ? 'Rent + Invest overtakes Buy House' : 'Buy House overtakes Rent + Invest'}`;
             }
 
-            differenceInfo.innerHTML = `<strong>Monthly Rent:</strong> Year 1: ₪${Math.round(monthlyRent).toLocaleString()} → Year 30: ₪${Math.round(year30Rent).toLocaleString()}<br>` +
-                                       `<strong>Initial Difference:</strong> ${initialDifference >= 0 ? 'Rent is ₪' + Math.round(Math.abs(initialDifference)).toLocaleString() + ' higher' : 'Mortgage is ₪' + Math.round(Math.abs(initialDifference)).toLocaleString() + ' higher'}<br>` +
-                                       `<strong>Year 30 Difference:</strong> ${year30Difference >= 0 ? 'Rent is ₪' + Math.round(Math.abs(year30Difference)).toLocaleString() + ' higher' : 'Mortgage is ₪' + Math.round(Math.abs(year30Difference)).toLocaleString() + ' higher'}` +
-                                       switchInfo;
+            document.getElementById('differenceInfo').innerHTML =
+                `<strong>Monthly Rent:</strong> Year 1: ${formatCurrency(monthlyRent)} → Year 30: ${formatCurrency(year30Rent)}<br>` +
+                `<strong>Initial Difference:</strong> ${formatDiff(initialDifference, 'Rent', 'Mortgage')}<br>` +
+                `<strong>Year 30 Difference:</strong> ${formatDiff(year30Difference, 'Rent', 'Mortgage')}` +
+                switchInfo;
 
-            strategyInfo.innerHTML = `<strong>Final Net Worth (Year 30):</strong><br>` +
-                                    `• Buy House: ₪${Math.round(finalHousingValue).toLocaleString()}<br>` +
-                                    `• Rent + Invest: ₪${Math.round(finalRentValue).toLocaleString()}<br>` +
-                                    `<strong style="color: #2e7d32;">Winner: ${winner}</strong> (₪${Math.round(advantage).toLocaleString()} advantage)`;
+            document.getElementById('strategyInfo').innerHTML =
+                `<strong>Final Net Worth (Year 30):</strong><br>` +
+                `• Buy House: ${formatCurrency(finalHousingValue)}<br>` +
+                `• Rent + Invest: ${formatCurrency(finalRentValue)}<br>` +
+                `<strong style="color: #2e7d32;">Winner: ${winner}</strong> (${formatCurrency(advantage)} advantage)`;
 
-            summaryDiv.style.display = 'block';
+            document.getElementById('calculationSummary').style.display = 'block';
         }
     </script>
 </body>
