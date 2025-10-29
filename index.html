@@ -348,15 +348,18 @@
                 }
             }
 
+            // Find when net worth advantage switches
             let wealthSwitchYear = null;
-            let previousDiff = housingValues[0] - rentAndInvestValues[0];
+            let initialWinner = housingValues[0] > rentAndInvestValues[0] ? 'housing' : 'rent';
+
             for (let y = 1; y <= 30; y++) {
-                const currentDiff = housingValues[y] - rentAndInvestValues[y];
-                if (previousDiff * currentDiff < 0) {
+                const housingLeading = housingValues[y] > rentAndInvestValues[y];
+                const currentWinner = housingLeading ? 'housing' : 'rent';
+
+                if (currentWinner !== initialWinner) {
                     wealthSwitchYear = y;
                     break;
                 }
-                previousDiff = currentDiff;
             }
 
             // Calculate winner and detailed breakdown
@@ -397,8 +400,10 @@
                     initialDifference < 0 ? 'Rent becomes higher than mortgage' : 'Mortgage becomes higher than rent'}`;
             }
             if (wealthSwitchYear) {
-                switchInfo += `<br><strong>Wealth Switch Point:</strong> Year ${wealthSwitchYear} - ${
-                    housingValues[0] > rentAndInvestValues[0] ? 'Rent + Invest overtakes Buy House' : 'Buy House overtakes Rent + Invest'}`;
+                const switchDirection = initialWinner === 'housing'
+                    ? 'Rent + Invest overtakes Buy House'
+                    : 'Buy House overtakes Rent + Invest';
+                switchInfo += `<br><strong>Wealth Switch Point:</strong> Year ${wealthSwitchYear} - ${switchDirection}`;
             }
 
             document.getElementById('differenceInfo').innerHTML =
@@ -410,17 +415,17 @@
             // Get initial investment from global scope (passed via recalculation)
             const initialInvestment = parseFloat(document.getElementById('stockInvestment').value) * 1000000;
             const houseValue = (initialInvestment + mortgage) * Math.pow(1 + (parseFloat(document.getElementById('housingYield').value) / 100), 30);
-            const housingStockValue = finalHousingValue - (houseValue - 0); // Mortgage paid off at year 30
+            const housingStockValue = finalHousingValue - houseValue; // Stock portion of housing scenario
 
             document.getElementById('strategyInfo').innerHTML =
                 `<strong>Final Net Worth (Year 30):</strong><br><br>` +
                 `<strong>🏠 Buy House:</strong> ${formatCurrency(finalHousingValue)}<br>` +
                 `&nbsp;&nbsp;&nbsp;• House Value: ${formatCurrency(houseValue)}<br>` +
                 `&nbsp;&nbsp;&nbsp;• Stock Portfolio: ${formatCurrency(housingStockValue)}<br>` +
-                `&nbsp;&nbsp;&nbsp;• Additional Invested: ${formatCurrency(totalHousingInvestment)}<br><br>` +
+                `&nbsp;&nbsp;&nbsp;• Additional Invested (over 30 years): ${formatCurrency(totalHousingInvestment)}<br><br>` +
                 `<strong>📈 Rent + Invest:</strong> ${formatCurrency(finalRentValue)}<br>` +
                 `&nbsp;&nbsp;&nbsp;• Stock Portfolio: ${formatCurrency(finalRentValue)}<br>` +
-                `&nbsp;&nbsp;&nbsp;• Additional Invested: ${formatCurrency(totalRentInvestment)}<br><br>` +
+                `&nbsp;&nbsp;&nbsp;• Additional Invested (over 30 years): ${formatCurrency(totalRentInvestment)}<br><br>` +
                 `<strong style="color: #2e7d32;">🏆 Winner: ${winner}</strong> (${formatCurrency(advantage)} advantage)`;
 
             document.getElementById('calculationSummary').style.display = 'block';
