@@ -371,6 +371,8 @@
             // Calculate total monthly investments made
             let totalHousingInvestment = 0;
             let totalRentInvestment = 0;
+            let totalMortgagePaid = 0;
+            let totalRentPaid = 0;
             let currentRent = monthlyRent;
 
             for (let y = 0; y < 30; y++) {
@@ -381,6 +383,8 @@
                     } else if (diff < 0) {
                         totalRentInvestment += Math.abs(diff);
                     }
+                    totalMortgagePaid += monthlyMortgagePayment;
+                    totalRentPaid += currentRent;
                 }
                 currentRent *= rentGrowthMultiplier;
             }
@@ -426,7 +430,9 @@
                 `<strong>📈 Rent + Invest:</strong> ${formatCurrency(finalRentValue)}<br>` +
                 `&nbsp;&nbsp;&nbsp;• Stock Portfolio: ${formatCurrency(finalRentValue)}<br>` +
                 `&nbsp;&nbsp;&nbsp;• Additional Invested (over 30 years): ${formatCurrency(totalRentInvestment)}<br><br>` +
-                `<strong style="color: #2e7d32;">🏆 Winner: ${winner}</strong> (${formatCurrency(advantage)} advantage)`;
+                `<strong style="color: #2e7d32;">🏆 Winner: ${winner}</strong> (${formatCurrency(advantage)} advantage)<br>` +
+                `<strong>Total Mortgage Paid (30 years):</strong> ${formatCurrency(totalMortgagePaid)}<br>` +
+                `<strong>Total Rent Paid (30 years):</strong> ${formatCurrency(totalRentPaid)}`;
 
             document.getElementById('calculationSummary').style.display = 'block';
         }
