@@ -60,6 +60,16 @@
     </div>
 
     <div class="input-container">
+        <label for="mortgageRate">Mortgage Interest Rate (%):</label>
+        <input type="number" id="mortgageRate" placeholder="e.g., 4" step="0.01" value="4">
+    </div>
+
+    <div class="input-container">
+        <label for="monthlyRent">Monthly Rent:</label>
+        <input type="number" id="monthlyRent" placeholder="Enter amount" step="0.01" value="0">
+    </div>
+
+    <div class="input-container">
         <label for="expectedYield">Expected S&P Yield (%):</label>
         <input type="number" id="expectedYield" placeholder="e.g., 7" step="0.01" value="7">
     </div>
@@ -81,6 +91,8 @@
         function plotGraph() {
             const investment = parseFloat(document.getElementById('stockInvestment').value);
             const mortgage = parseFloat(document.getElementById('mortgageValue').value);
+            const mortgageRate = parseFloat(document.getElementById('mortgageRate').value);
+            const monthlyRent = parseFloat(document.getElementById('monthlyRent').value);
             const yieldRate = parseFloat(document.getElementById('expectedYield').value);
             const housingYield = parseFloat(document.getElementById('housingYield').value);
 
@@ -94,6 +106,16 @@
                 return;
             }
 
+            if (isNaN(mortgageRate) || mortgageRate < 0) {
+                alert('Please enter a valid mortgage interest rate');
+                return;
+            }
+
+            if (isNaN(monthlyRent) || monthlyRent < 0) {
+                alert('Please enter a valid monthly rent amount');
+                return;
+            }
+
             if (isNaN(yieldRate) || yieldRate <= 0) {
                 alert('Please enter a valid S&P yield percentage');
                 return;
@@ -104,17 +126,57 @@
                 return;
             }
 
-            // Calculate investment values for 30 years with the specified annual growth
+            // Calculate monthly mortgage payment using amortization formula
+            const monthlyMortgageRate = mortgageRate / 100 / 12;
+            const numPayments = 30 * 12; // 30 years
+            let monthlyMortgagePayment = 0;
+
+            if (mortgage > 0 && mortgageRate > 0) {
+                monthlyMortgagePayment = mortgage * (monthlyMortgageRate * Math.pow(1 + monthlyMortgageRate, numPayments)) /
+                                        (Math.pow(1 + monthlyMortgageRate, numPayments) - 1);
+            }
+
+            // Calculate investment values for 30 years
             const years = [];
-            const values = [];
+            const spOnlyValues = [];
             const housingValues = [];
-            const growthMultiplier = 1 + (yieldRate / 100);
+            const rentAndInvestValues = [];
+            const monthlyGrowthMultiplier = Math.pow(1 + (yieldRate / 100), 1/12);
             const housingGrowthMultiplier = 1 + (housingYield / 100);
+
+            // Initial values
+            let spBalance = investment;
+            let rentInvestBalance = investment;
+            let remainingMortgage = mortgage;
 
             for (let year = 0; year <= 30; year++) {
                 years.push(year);
-                values.push(investment * Math.pow(growthMultiplier, year));
-                housingValues.push((investment + mortgage) * Math.pow(housingGrowthMultiplier, year));
+
+                // Scenario 1: Pure S&P investment (no housing, no rent)
+                spOnlyValues.push(investment * Math.pow(1 + (yieldRate / 100), year));
+
+                // Scenario 2: Buy house with mortgage
+                const houseValue = (investment + mortgage) * Math.pow(housingGrowthMultiplier, year);
+                const mortgageRemaining = year < 30 ? remainingMortgage : 0;
+                housingValues.push(houseValue - mortgageRemaining);
+
+                // Scenario 3: Rent and invest
+                rentAndInvestValues.push(rentInvestBalance);
+
+                // Calculate monthly changes for next year
+                if (year < 30) {
+                    for (let month = 0; month < 12; month++) {
+                        // Mortgage payment reduces balance, then apply monthly growth
+                        if (mortgage > 0) {
+                            const interestPayment = remainingMortgage * monthlyMortgageRate;
+                            const principalPayment = monthlyMortgagePayment - interestPayment;
+                            remainingMortgage -= principalPayment;
+                        }
+
+                        // Rent scenario: deduct rent, then grow
+                        rentInvestBalance = (rentInvestBalance - monthlyRent) * monthlyGrowthMultiplier;
+                    }
+                }
             }
 
             // Destroy existing chart if it exists
@@ -129,20 +191,28 @@
                 data: {
                     labels: years,
                     datasets: [{
-                        label: 'Net Investment Value ($)',
-                        data: values,
+                        label: 'S&P Only (No Housing/Rent)',
+                        data: spOnlyValues,
                         borderColor: 'rgb(75, 192, 192)',
                         backgroundColor: 'rgba(75, 192, 192, 0.2)',
                         tension: 0.1,
-                        fill: true
+                        fill: false
                     },
                     {
-                        label: 'Housing Investment Value ($)',
+                        label: 'Buy House (Net Equity)',
                         data: housingValues,
                         borderColor: 'rgb(255, 99, 132)',
                         backgroundColor: 'rgba(255, 99, 132, 0.2)',
                         tension: 0.1,
-                        fill: true
+                        fill: false
+                    },
+                    {
+                        label: 'Rent + Invest in S&P',
+                        data: rentAndInvestValues,
+                        borderColor: 'rgb(153, 102, 255)',
+                        backgroundColor: 'rgba(153, 102, 255, 0.2)',
+                        tension: 0.1,
+                        fill: false
                     }]
                 },
                 options: {
@@ -150,7 +220,7 @@
                     plugins: {
                         title: {
                             display: true,
-                            text: `30-Year Investment Growth`
+                            text: `30-Year Investment Comparison: Buy vs Rent vs Invest`
                         },
                         legend: {
                             display: true
@@ -166,7 +236,7 @@
                         y: {
                             title: {
                                 display: true,
-                                text: 'Value ($)'
+                                text: 'Net Worth ($)'
                             },
                             ticks: {
                                 callback: function(value) {
