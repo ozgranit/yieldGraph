@@ -247,11 +247,11 @@
                         y: {
                             title: {
                                 display: true,
-                                text: 'Net Worth ($)'
+                                text: 'Net Worth (NIS)'
                             },
                             ticks: {
                                 callback: function(value) {
-                                    return '$' + Math.round(value).toLocaleString();
+                                    return '₪' + Math.round(value).toLocaleString();
                                 }
                             }
                         }
@@ -266,17 +266,17 @@
             const strategyInfo = document.getElementById('strategyInfo');
 
             if (mortgage > 0) {
-                mortgageInfo.innerHTML = `<strong>Monthly Mortgage Payment:</strong> $${Math.round(monthlyMortgagePayment).toLocaleString()}`;
+                mortgageInfo.innerHTML = `<strong>Monthly Mortgage Payment:</strong> ₪${Math.round(monthlyMortgagePayment).toLocaleString()}`;
             } else {
-                mortgageInfo.innerHTML = `<strong>Monthly Mortgage Payment:</strong> $0 (no mortgage)`;
+                mortgageInfo.innerHTML = `<strong>Monthly Mortgage Payment:</strong> ₪0 (no mortgage)`;
             }
 
             if (monthlyDifference > 0) {
-                differenceInfo.innerHTML = `<strong>Monthly Difference:</strong> Rent is $${Math.round(Math.abs(monthlyDifference)).toLocaleString()} higher than mortgage`;
-                strategyInfo.innerHTML = `<strong>Who Invests the Difference:</strong> Homeowner invests $${Math.round(Math.abs(monthlyDifference)).toLocaleString()}/month in S&P 500`;
+                differenceInfo.innerHTML = `<strong>Monthly Difference:</strong> Rent is ₪${Math.round(Math.abs(monthlyDifference)).toLocaleString()} higher than mortgage`;
+                strategyInfo.innerHTML = `<strong>Who Invests the Difference:</strong> Homeowner invests ₪${Math.round(Math.abs(monthlyDifference)).toLocaleString()}/month in S&P 500`;
             } else if (monthlyDifference < 0) {
-                differenceInfo.innerHTML = `<strong>Monthly Difference:</strong> Mortgage is $${Math.round(Math.abs(monthlyDifference)).toLocaleString()} higher than rent`;
-                strategyInfo.innerHTML = `<strong>Who Invests the Difference:</strong> Renter invests $${Math.round(Math.abs(monthlyDifference)).toLocaleString()}/month in S&P 500`;
+                differenceInfo.innerHTML = `<strong>Monthly Difference:</strong> Mortgage is ₪${Math.round(Math.abs(monthlyDifference)).toLocaleString()} higher than rent`;
+                strategyInfo.innerHTML = `<strong>Who Invests the Difference:</strong> Renter invests ₪${Math.round(Math.abs(monthlyDifference)).toLocaleString()}/month in S&P 500`;
             } else {
                 differenceInfo.innerHTML = `<strong>Monthly Difference:</strong> Rent and mortgage are equal`;
                 strategyInfo.innerHTML = `<strong>Who Invests the Difference:</strong> No additional monthly investment`;
