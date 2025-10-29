@@ -81,6 +81,13 @@
 
     <button onclick="plotGraph()">Calculate & Plot</button>
 
+    <div id="calculationSummary" style="display: none; background-color: #e8f4f8; padding: 15px; border-radius: 5px; margin-top: 20px; font-size: 14px;">
+        <h3 style="margin-top: 0;">Calculation Summary:</h3>
+        <p id="mortgagePaymentInfo"></p>
+        <p id="differenceInfo"></p>
+        <p id="strategyInfo"></p>
+    </div>
+
     <div id="chartContainer">
         <canvas id="investmentChart"></canvas>
     </div>
@@ -136,6 +143,9 @@
                                         (Math.pow(1 + monthlyMortgageRate, numPayments) - 1);
             }
 
+            // Calculate the difference between rent and mortgage
+            const monthlyDifference = monthlyRent - monthlyMortgagePayment;
+
             // Calculate investment values for 30 years
             const years = [];
             const housingValues = [];
@@ -144,7 +154,10 @@
             const housingGrowthMultiplier = 1 + (housingYield / 100);
 
             // Initial values
+            // Renter: starts with initial investment in S&P
             let rentInvestBalance = investment;
+            // Homeowner: starts with $0 in S&P (all goes to down payment)
+            let housingInvestBalance = 0;
             let remainingMortgage = mortgage;
 
             for (let year = 0; year <= 30; year++) {
@@ -153,7 +166,8 @@
                 // Scenario 1: Buy house with mortgage
                 const houseValue = (investment + mortgage) * Math.pow(housingGrowthMultiplier, year);
                 const mortgageRemaining = year < 30 ? remainingMortgage : 0;
-                housingValues.push(houseValue - mortgageRemaining);
+                // Net worth = house equity + S&P balance (from investing difference if rent > mortgage)
+                housingValues.push(houseValue - mortgageRemaining + housingInvestBalance);
 
                 // Scenario 2: Rent and invest
                 rentAndInvestValues.push(rentInvestBalance);
@@ -161,15 +175,25 @@
                 // Calculate monthly changes for next year
                 if (year < 30) {
                     for (let month = 0; month < 12; month++) {
-                        // Mortgage payment reduces balance, then apply monthly growth
+                        // Pay down mortgage principal
                         if (mortgage > 0) {
                             const interestPayment = remainingMortgage * monthlyMortgageRate;
                             const principalPayment = monthlyMortgagePayment - interestPayment;
                             remainingMortgage -= principalPayment;
                         }
 
-                        // Rent scenario: deduct rent, then grow
-                        rentInvestBalance = (rentInvestBalance - monthlyRent) * monthlyGrowthMultiplier;
+                        // Whoever pays less invests the difference
+                        if (monthlyDifference > 0) {
+                            // Rent is higher than mortgage: homeowner invests the difference
+                            housingInvestBalance = (housingInvestBalance + monthlyDifference) * monthlyGrowthMultiplier;
+                            // Renter just grows existing balance (rent is already their cost)
+                            rentInvestBalance = rentInvestBalance * monthlyGrowthMultiplier;
+                        } else {
+                            // Mortgage is higher than rent: renter invests the difference
+                            rentInvestBalance = (rentInvestBalance - monthlyDifference) * monthlyGrowthMultiplier;
+                            // Homeowner just grows existing balance (mortgage is already their cost)
+                            housingInvestBalance = housingInvestBalance * monthlyGrowthMultiplier;
+                        }
                     }
                 }
             }
@@ -234,6 +258,31 @@
                     }
                 }
             });
+
+            // Update calculation summary
+            const summaryDiv = document.getElementById('calculationSummary');
+            const mortgageInfo = document.getElementById('mortgagePaymentInfo');
+            const differenceInfo = document.getElementById('differenceInfo');
+            const strategyInfo = document.getElementById('strategyInfo');
+
+            if (mortgage > 0) {
+                mortgageInfo.innerHTML = `<strong>Monthly Mortgage Payment:</strong> $${Math.round(monthlyMortgagePayment).toLocaleString()}`;
+            } else {
+                mortgageInfo.innerHTML = `<strong>Monthly Mortgage Payment:</strong> $0 (no mortgage)`;
+            }
+
+            if (monthlyDifference > 0) {
+                differenceInfo.innerHTML = `<strong>Monthly Difference:</strong> Rent is $${Math.round(Math.abs(monthlyDifference)).toLocaleString()} higher than mortgage`;
+                strategyInfo.innerHTML = `<strong>Who Invests the Difference:</strong> Homeowner invests $${Math.round(Math.abs(monthlyDifference)).toLocaleString()}/month in S&P 500`;
+            } else if (monthlyDifference < 0) {
+                differenceInfo.innerHTML = `<strong>Monthly Difference:</strong> Mortgage is $${Math.round(Math.abs(monthlyDifference)).toLocaleString()} higher than rent`;
+                strategyInfo.innerHTML = `<strong>Who Invests the Difference:</strong> Renter invests $${Math.round(Math.abs(monthlyDifference)).toLocaleString()}/month in S&P 500`;
+            } else {
+                differenceInfo.innerHTML = `<strong>Monthly Difference:</strong> Rent and mortgage are equal`;
+                strategyInfo.innerHTML = `<strong>Who Invests the Difference:</strong> No additional monthly investment`;
+            }
+
+            summaryDiv.style.display = 'block';
         }
     </script>
 </body>
