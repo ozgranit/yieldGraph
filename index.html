@@ -70,6 +70,11 @@
     </div>
 
     <div class="input-container">
+        <label for="rentGrowthRate">Rent Growth Rate (%):</label>
+        <input type="number" id="rentGrowthRate" placeholder="e.g., 2" step="0.01" value="2">
+    </div>
+
+    <div class="input-container">
         <label for="expectedYield">Expected S&P Yield (%):</label>
         <input type="number" id="expectedYield" placeholder="e.g., 7" step="0.01" value="7">
     </div>
@@ -100,6 +105,7 @@
             const mortgage = parseFloat(document.getElementById('mortgageValue').value);
             const mortgageRate = parseFloat(document.getElementById('mortgageRate').value);
             const monthlyRent = parseFloat(document.getElementById('monthlyRent').value);
+            const rentGrowthRate = parseFloat(document.getElementById('rentGrowthRate').value);
             const yieldRate = parseFloat(document.getElementById('expectedYield').value);
             const housingYield = parseFloat(document.getElementById('housingYield').value);
 
@@ -120,6 +126,11 @@
 
             if (isNaN(monthlyRent) || monthlyRent < 0) {
                 alert('Please enter a valid monthly rent amount');
+                return;
+            }
+
+            if (isNaN(rentGrowthRate) || rentGrowthRate < 0) {
+                alert('Please enter a valid rent growth rate');
                 return;
             }
 
@@ -152,6 +163,7 @@
             const rentAndInvestValues = [];
             const monthlyGrowthMultiplier = Math.pow(1 + (yieldRate / 100), 1/12);
             const housingGrowthMultiplier = 1 + (housingYield / 100);
+            const rentGrowthMultiplier = 1 + (rentGrowthRate / 100);
 
             // Initial values
             // Renter: starts with initial investment in S&P
@@ -159,6 +171,7 @@
             // Homeowner: starts with $0 in S&P (all goes to down payment)
             let housingInvestBalance = 0;
             let remainingMortgage = mortgage;
+            let currentMonthlyRent = monthlyRent; // Rent starts at initial value and grows annually
 
             for (let year = 0; year <= 30; year++) {
                 years.push(year);
@@ -182,6 +195,9 @@
                             remainingMortgage -= principalPayment;
                         }
 
+                        // Calculate current month's difference (rent grows, mortgage is fixed)
+                        const monthlyDifference = currentMonthlyRent - monthlyMortgagePayment;
+
                         // Whoever pays less invests the difference
                         if (monthlyDifference > 0) {
                             // Rent is higher than mortgage: homeowner invests the difference
@@ -195,6 +211,9 @@
                             housingInvestBalance = housingInvestBalance * monthlyGrowthMultiplier;
                         }
                     }
+
+                    // Grow rent annually
+                    currentMonthlyRent = currentMonthlyRent * rentGrowthMultiplier;
                 }
             }
 
