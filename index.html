@@ -354,8 +354,9 @@
             const housingValues = [];
             const rentAndInvestValues = [];
             const rentPayments = [];
-            const housingStockBalances = [];
+            const houseValues = [];
             const renterStockBalances = [];
+            const renterInitialInvestmentOnly = []; // Track initial investment growth only
             let rentInvestBalance = investment;
             let housingInvestBalance = 0;
             let remainingMortgage = mortgage;
@@ -374,8 +375,11 @@
 
                 // Track data for additional charts
                 rentPayments.push(currentMonthlyRent);
-                housingStockBalances.push(housingInvestBalance);
+                houseValues.push(houseValue);
                 renterStockBalances.push(rentInvestBalance);
+                // Track initial investment growth only (no additional contributions)
+                const initialInvestmentGrowth = investment * Math.pow(1 + (yieldRate / 100), year);
+                renterInitialInvestmentOnly.push(initialInvestmentGrowth);
 
                 // Process monthly changes for the next year
                 if (year < 30) {
@@ -552,17 +556,17 @@
                 data: {
                     labels: years,
                     datasets: [{
-                        label: 'Homeowner Stock Portfolio',
-                        data: housingStockBalances,
+                        label: 'House Value',
+                        data: houseValues,
                         borderColor: 'rgb(255, 99, 132)',
                         backgroundColor: 'rgba(255, 99, 132, 0.2)',
                         tension: 0.1,
                         fill: false
                     }, {
-                        label: 'Renter Stock Portfolio',
-                        data: renterStockBalances,
-                        borderColor: 'rgb(153, 102, 255)',
-                        backgroundColor: 'rgba(153, 102, 255, 0.2)',
+                        label: 'Renter Initial Investment Only',
+                        data: renterInitialInvestmentOnly,
+                        borderColor: 'rgb(75, 192, 192)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
                         tension: 0.1,
                         fill: false
                     }]
@@ -573,7 +577,7 @@
                     plugins: {
                         title: {
                             display: true,
-                            text: 'Stock Portfolio Growth Comparison',
+                            text: 'House Value vs Renter Initial Investment Growth',
                             font: { size: window.innerWidth < 768 ? 14 : 16 }
                         },
                         legend: {
@@ -587,7 +591,7 @@
                             ticks: { font: { size: window.innerWidth < 768 ? 10 : 11 } }
                         },
                         y: {
-                            title: { display: true, text: 'Stock Portfolio Value (NIS)', font: { size: window.innerWidth < 768 ? 11 : 12 } },
+                            title: { display: true, text: 'Value (NIS)', font: { size: window.innerWidth < 768 ? 11 : 12 } },
                             ticks: {
                                 callback: value => '₪' + Math.round(value).toLocaleString(),
                                 font: { size: window.innerWidth < 768 ? 10 : 11 }
