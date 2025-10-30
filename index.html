@@ -275,13 +275,6 @@
         </div>
     </div>
 
-    <div class="input-container">
-        <label for="showDetails">
-            <input type="checkbox" id="showDetails" checked style="width: auto; margin-right: 10px;">
-            Show Detailed Breakdown
-        </label>
-    </div>
-
     <button onclick="plotGraph()">Calculate & Plot</button>
 
     <div id="calculationSummary" style="display: none; background-color: #e8f4f8; padding: 15px; border-radius: 5px; margin-top: 20px; font-size: 14px;">
@@ -297,10 +290,10 @@
 
     <div class="charts-grid">
         <div class="chart-box">
-            <canvas id="paymentsChart"></canvas>
+            <canvas id="stockPortfolioChart"></canvas>
         </div>
         <div class="chart-box">
-            <canvas id="stockPortfolioChart"></canvas>
+            <canvas id="paymentsChart"></canvas>
         </div>
     </div>
 
@@ -696,37 +689,17 @@
             const houseValue = (initialInvestment + mortgage) * Math.pow(1 + (parseFloat(document.getElementById('housingYield').value) / 100), 30);
             const housingStockValue = housingInvestBalance;
 
-            const showDetails = document.getElementById('showDetails').checked;
-
             let strategyHtml = `<strong>Final Net Worth (Year 30):</strong><br><br>` +
-                `<strong>🏠 Buy House:</strong> ${formatCurrency(finalHousingValue)}<br>`;
-
-            if (showDetails) {
-                strategyHtml +=
-                    `&nbsp;&nbsp;&nbsp;• House Value: ${formatCurrency(houseValue)}<br>` +
-                    `&nbsp;&nbsp;&nbsp;• Stock Portfolio: ${formatCurrency(housingStockValue)}<br>` +
-                    `&nbsp;&nbsp;&nbsp;• Additional Invested (over 30 years): ${formatCurrency(totalHousingInvestment)}<br><br>`;
-            } else {
-                strategyHtml += '<br>';
-            }
-
-            strategyHtml += `<strong>📈 Rent + Invest:</strong> ${formatCurrency(finalRentValue)}<br>`;
-
-            if (showDetails) {
-                strategyHtml +=
-                    `&nbsp;&nbsp;&nbsp;• Stock Portfolio: ${formatCurrency(finalRentValue)}<br>` +
-                    `&nbsp;&nbsp;&nbsp;• Additional Invested (over 30 years): ${formatCurrency(totalRentInvestment)}<br><br>`;
-            } else {
-                strategyHtml += '<br>';
-            }
-
-            strategyHtml += `<strong style="color: #2e7d32;">🏆 Winner: ${winner}</strong> (${formatCurrency(advantage)} advantage)`;
-
-            if (showDetails) {
-                strategyHtml +=
-                    `<br><strong>Total Mortgage Paid (30 years):</strong> ${formatCurrency(totalMortgagePaid)}<br>` +
-                    `<strong>Total Rent Paid (30 years):</strong> ${formatCurrency(totalRentPaid)}`;
-            }
+                `<strong>🏠 Buy House:</strong> ${formatCurrency(finalHousingValue)}<br>` +
+                `&nbsp;&nbsp;&nbsp;• House Value: ${formatCurrency(houseValue)}<br>` +
+                `&nbsp;&nbsp;&nbsp;• Stock Portfolio: ${formatCurrency(housingStockValue)}<br>` +
+                `&nbsp;&nbsp;&nbsp;• Additional Invested (over 30 years): ${formatCurrency(totalHousingInvestment)}<br><br>` +
+                `<strong>📈 Rent + Invest:</strong> ${formatCurrency(finalRentValue)}<br>` +
+                `&nbsp;&nbsp;&nbsp;• Stock Portfolio: ${formatCurrency(finalRentValue)}<br>` +
+                `&nbsp;&nbsp;&nbsp;• Additional Invested (over 30 years): ${formatCurrency(totalRentInvestment)}<br><br>` +
+                `<strong style="color: #2e7d32;">🏆 Winner: ${winner}</strong> (${formatCurrency(advantage)} advantage)<br>` +
+                `<strong>Total Mortgage Paid (30 years):</strong> ${formatCurrency(totalMortgagePaid)}<br>` +
+                `<strong>Total Rent Paid (30 years):</strong> ${formatCurrency(totalRentPaid)}`;
 
             document.getElementById('strategyInfo').innerHTML = strategyHtml;
 
