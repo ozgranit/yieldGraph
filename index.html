@@ -791,7 +791,8 @@
             // Display fees information if applicable
             let feesInfo = '';
             if (includeAdditionalCosts && totalFees > 0) {
-                feesInfo = `<strong>Additional Costs Added to Mortgage:</strong><br>` +
+                feesInfo = `<div style="background-color: #fffef0; padding: 12px 15px; border-radius: 6px; margin-bottom: 12px; border-left: 4px solid #ffc107;">` +
+                    `<strong>Additional Costs Added to Mortgage:</strong><br>` +
                     `&nbsp;&nbsp;&nbsp;• Realtor Fee: ${formatCurrency(realtorFeeAmount)}<br>` +
                     `&nbsp;&nbsp;&nbsp;• Lawyer Fee: ${formatCurrency(lawyerFeeAmount)}<br>`;
 
@@ -799,7 +800,8 @@
                     feesInfo += `&nbsp;&nbsp;&nbsp;• Purchase Tax: ${formatCurrency(buyerTaxAmount)}<br>`;
                 }
 
-                feesInfo += `&nbsp;&nbsp;&nbsp;• Total Fees: ${formatCurrency(totalFees)}<br><br>`;
+                feesInfo += `&nbsp;&nbsp;&nbsp;• <strong>Total Fees: ${formatCurrency(totalFees)}</strong>` +
+                    `</div>`;
             }
 
             document.getElementById('mortgagePaymentInfo').innerHTML =
