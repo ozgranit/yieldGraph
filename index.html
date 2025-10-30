@@ -169,9 +169,10 @@
             display: none;
             margin-top: 15px;
             padding: 15px;
-            background-color: #fff;
+            background-color: #fffef0;
             border-radius: 8px;
-            border: 2px solid #ddd;
+            border: 2px dashed #ffc107;
+            box-shadow: 0 2px 8px rgba(255, 193, 7, 0.15);
         }
 
         .additional-costs-section.visible {
@@ -288,7 +289,7 @@
                 <div class="input-container">
                     <label for="buyerTax">
                         <input type="checkbox" id="buyerTax" style="width: auto; margin-right: 10px;" checked>
-                        Buyer Tax
+                        Purchase Tax (Assumes First Apartment)
                     </label>
                 </div>
             </div>
@@ -748,6 +749,7 @@
 
             document.getElementById('mortgagePaymentInfo').innerHTML =
                 feesInfo +
+                `<strong>Total Mortgage Taken:</strong> ${formatCurrency(mortgage)}<br>` +
                 `<strong>Monthly Mortgage Payment (Fixed):</strong> ${mortgage > 0 ? formatCurrency(monthlyMortgagePayment) : '₪0 (no mortgage)'}`;
 
             let switchInfo = '';
