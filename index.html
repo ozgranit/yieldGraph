@@ -921,6 +921,9 @@
             // Final results with value cards
             const finalHouseValue = houseWorth * Math.pow(1 + (housingYield / 100), 30);
 
+            // Determine winner icon
+            const winnerIcon = winner === 'Buy House' ? '🏠' : '📈';
+
             let strategyHtml = `
                 <div class="value-breakdown">
                     <div class="value-card buyer">
@@ -940,7 +943,7 @@
                     </div>
                 </div>
                 <p class="winner-highlight">
-                    <strong>🏆 Winner: ${winner}</strong><br>
+                    <strong>🏆 ${winnerIcon} Winner: ${winner}</strong><br>
                     Advantage: ${formatCurrency(advantage)}
                 </p>
             `;
