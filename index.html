@@ -335,6 +335,11 @@
         <input type="number" id="stockInvestment" placeholder="e.g., 1.1" step="0.01" value="1.1">
     </div>
 
+    <div class="input-container">
+        <label for="availableIncome">Available Income for Housing & Investing:</label>
+        <input type="number" id="availableIncome" placeholder="e.g., 15000" step="100" value="15000">
+    </div>
+
     <div class="two-column-container">
         <div class="buyer-column">
             <div class="column-header">🏠 Home Buyer</div>
@@ -490,6 +495,7 @@
             const yieldRate = parseFloat(document.getElementById('expectedYield').value);
             const housingYield = parseFloat(document.getElementById('housingYield').value);
             const includeAdditionalCosts = document.getElementById('additionalCosts').checked;
+            const availableIncome = parseFloat(document.getElementById('availableIncome').value);
 
             // Additional costs
             const realtorFeePercent = includeAdditionalCosts ? parseFloat(document.getElementById('realtorFee').value) / 100 : 0;
@@ -532,6 +538,10 @@
             }
             if (isNaN(yieldRate) || yieldRate <= 0 || isNaN(housingYield) || housingYield <= 0) {
                 alert('Please enter valid yield percentages');
+                return;
+            }
+            if (isNaN(availableIncome) || availableIncome <= 0) {
+                alert('Please enter valid available income');
                 return;
             }
 
@@ -588,25 +598,22 @@
                             remainingMortgage = Math.max(0, remainingMortgage - principalPayment);
                         }
 
-                        // Calculate the difference and invest it
-                        const monthlyDifference = currentMonthlyRent - monthlyMortgagePayment;
+                        // Calculate how much each can invest from available income
+                        const buyerLeftover = availableIncome - monthlyMortgagePayment;
+                        const renterLeftover = availableIncome - currentMonthlyRent;
 
-                        if (monthlyDifference > 0) {
-                            // Rent is higher than mortgage
-                            // Homeowner saves money, invests the difference
-                            housingInvestBalance = (housingInvestBalance + monthlyDifference) * monthlyGrowthMultiplier;
-                            // Renter just grows existing balance (already paid rent, no extra to invest)
-                            rentInvestBalance = rentInvestBalance * monthlyGrowthMultiplier;
-                        } else if (monthlyDifference < 0) {
-                            // Mortgage is higher than rent
-                            // Renter saves money, invests the difference (absolute value)
-                            rentInvestBalance = (rentInvestBalance + Math.abs(monthlyDifference)) * monthlyGrowthMultiplier;
-                            // Homeowner just grows existing balance (already paid mortgage, no extra to invest)
-                            housingInvestBalance = housingInvestBalance * monthlyGrowthMultiplier;
+                        // Buyer invests leftover amount (if positive)
+                        if (buyerLeftover > 0) {
+                            housingInvestBalance = (housingInvestBalance + buyerLeftover) * monthlyGrowthMultiplier;
                         } else {
-                            // Rent equals mortgage - both just grow their existing balances
-                            rentInvestBalance = rentInvestBalance * monthlyGrowthMultiplier;
                             housingInvestBalance = housingInvestBalance * monthlyGrowthMultiplier;
+                        }
+
+                        // Renter invests leftover amount (if positive)
+                        if (renterLeftover > 0) {
+                            rentInvestBalance = (rentInvestBalance + renterLeftover) * monthlyGrowthMultiplier;
+                        } else {
+                            rentInvestBalance = rentInvestBalance * monthlyGrowthMultiplier;
                         }
                     }
                     currentMonthlyRent *= rentGrowthMultiplier;
@@ -856,12 +863,16 @@
 
             for (let y = 0; y < 30; y++) {
                 for (let m = 0; m < 12; m++) {
-                    const diff = currentRent - monthlyMortgagePayment;
-                    if (diff > 0) {
-                        totalHousingInvestment += diff;
-                    } else if (diff < 0) {
-                        totalRentInvestment += Math.abs(diff);
+                    const buyerLeftover = availableIncome - monthlyMortgagePayment;
+                    const renterLeftover = availableIncome - currentRent;
+
+                    if (buyerLeftover > 0) {
+                        totalHousingInvestment += buyerLeftover;
                     }
+                    if (renterLeftover > 0) {
+                        totalRentInvestment += renterLeftover;
+                    }
+
                     totalMortgagePaid += monthlyMortgagePayment;
                     totalRentPaid += currentRent;
                 }
