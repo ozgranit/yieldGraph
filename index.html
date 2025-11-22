@@ -594,6 +594,10 @@
             let totalRentLiquidation = 0;
             let totalMortgagePaid = 0;
             let totalRentPaid = 0;
+            let buyerBankruptcyYear = null;
+            let renterBankruptcyYear = null;
+            let buyerPortfolioDepletedYear = null;
+            let renterPortfolioDepletedYear = null;
 
             // Calculate 30-year projections
             for (let year = 0; year <= 30; year++) {
@@ -637,8 +641,29 @@
                             housingInvestBalance = (housingInvestBalance + buyerLeftover) * monthlyGrowthMultiplier;
                         } else if (buyerLeftover < 0) {
                             // Need to liquidate investments to cover shortfall
-                            totalHousingLiquidation += Math.abs(buyerLeftover);
-                            housingInvestBalance = Math.max(0, (housingInvestBalance + buyerLeftover) * monthlyGrowthMultiplier);
+                            const shortfall = Math.abs(buyerLeftover);
+
+                            if (housingInvestBalance >= shortfall) {
+                                // Can cover from portfolio
+                                totalHousingLiquidation += shortfall;
+                                housingInvestBalance = (housingInvestBalance + buyerLeftover) * monthlyGrowthMultiplier;
+                            } else if (housingInvestBalance > 0) {
+                                // Partial coverage - portfolio depleted this month
+                                totalHousingLiquidation += housingInvestBalance;
+                                housingInvestBalance = 0;
+                                if (!buyerPortfolioDepletedYear) {
+                                    buyerPortfolioDepletedYear = year + (month / 12);
+                                }
+                                // Mark bankruptcy - cannot cover full payment
+                                if (!buyerBankruptcyYear) {
+                                    buyerBankruptcyYear = year + (month / 12);
+                                }
+                            } else {
+                                // Portfolio already empty - bankruptcy continues
+                                if (!buyerBankruptcyYear) {
+                                    buyerBankruptcyYear = year + (month / 12);
+                                }
+                            }
                         } else {
                             housingInvestBalance = housingInvestBalance * monthlyGrowthMultiplier;
                         }
@@ -649,8 +674,29 @@
                             rentInvestBalance = (rentInvestBalance + renterLeftover) * monthlyGrowthMultiplier;
                         } else if (renterLeftover < 0) {
                             // Need to liquidate investments to cover shortfall
-                            totalRentLiquidation += Math.abs(renterLeftover);
-                            rentInvestBalance = Math.max(0, (rentInvestBalance + renterLeftover) * monthlyGrowthMultiplier);
+                            const shortfall = Math.abs(renterLeftover);
+
+                            if (rentInvestBalance >= shortfall) {
+                                // Can cover from portfolio
+                                totalRentLiquidation += shortfall;
+                                rentInvestBalance = (rentInvestBalance + renterLeftover) * monthlyGrowthMultiplier;
+                            } else if (rentInvestBalance > 0) {
+                                // Partial coverage - portfolio depleted this month
+                                totalRentLiquidation += rentInvestBalance;
+                                rentInvestBalance = 0;
+                                if (!renterPortfolioDepletedYear) {
+                                    renterPortfolioDepletedYear = year + (month / 12);
+                                }
+                                // Mark bankruptcy - cannot cover full payment
+                                if (!renterBankruptcyYear) {
+                                    renterBankruptcyYear = year + (month / 12);
+                                }
+                            } else {
+                                // Portfolio already empty - bankruptcy continues
+                                if (!renterBankruptcyYear) {
+                                    renterBankruptcyYear = year + (month / 12);
+                                }
+                            }
                         } else {
                             rentInvestBalance = rentInvestBalance * monthlyGrowthMultiplier;
                         }
@@ -850,14 +896,16 @@
                          housingValues, rentAndInvestValues, mortgage, housingInvestBalance, investment,
                          realtorFeeAmount, lawyerFeeAmount, buyerTaxAmount, totalFees, includeAdditionalCosts,
                          houseWorth, housingYield, totalHousingInvestment, totalRentInvestment,
-                         totalHousingLiquidation, totalRentLiquidation, totalMortgagePaid, totalRentPaid);
+                         totalHousingLiquidation, totalRentLiquidation, totalMortgagePaid, totalRentPaid,
+                         buyerBankruptcyYear, renterBankruptcyYear, buyerPortfolioDepletedYear, renterPortfolioDepletedYear);
         }
 
         function updateSummary(monthlyRent, monthlyMortgagePayment, rentGrowthMultiplier,
                               housingValues, rentAndInvestValues, mortgage, housingInvestBalance, initialInvestment,
                               realtorFeeAmount, lawyerFeeAmount, buyerTaxAmount, totalFees, includeAdditionalCosts,
                               houseWorth, housingYield, totalHousingInvestment, totalRentInvestment,
-                              totalHousingLiquidation, totalRentLiquidation, totalMortgagePaid, totalRentPaid) {
+                              totalHousingLiquidation, totalRentLiquidation, totalMortgagePaid, totalRentPaid,
+                              buyerBankruptcyYear, renterBankruptcyYear, buyerPortfolioDepletedYear, renterPortfolioDepletedYear) {
             const year30Rent = monthlyRent * Math.pow(rentGrowthMultiplier, 30);
             const initialDifference = monthlyRent - monthlyMortgagePayment;
             const year30Difference = year30Rent - monthlyMortgagePayment;
@@ -960,6 +1008,8 @@
                         <div class="detail">• Stock Portfolio: ${formatCurrency(housingInvestBalance)}</div>
                         <div class="detail">• Additional Invested: ${formatCurrency(totalHousingInvestment)}</div>
                         ${totalHousingLiquidation > 0 ? `<div class="detail" style="color: #dc3545;">• Portfolio Liquidated: ${formatCurrency(totalHousingLiquidation)}</div>` : ''}
+                        ${buyerPortfolioDepletedYear ? `<div class="detail" style="color: #dc3545; font-weight: bold;">⚠️ Portfolio Depleted: Year ${buyerPortfolioDepletedYear.toFixed(1)}</div>` : ''}
+                        ${buyerBankruptcyYear ? `<div class="detail" style="color: #dc3545; font-weight: bold;">💥 BANKRUPTCY: Year ${buyerBankruptcyYear.toFixed(1)} - Cannot cover mortgage payments</div>` : ''}
                         <div class="detail">• Total Paid: ${formatCurrency(totalMortgagePaid)}</div>
                     </div>
                     <div class="value-card renter">
@@ -968,6 +1018,8 @@
                         <div class="detail">• Stock Portfolio: ${formatCurrency(finalRentValue)}</div>
                         <div class="detail">• Additional Invested: ${formatCurrency(totalRentInvestment)}</div>
                         ${totalRentLiquidation > 0 ? `<div class="detail" style="color: #dc3545;">• Portfolio Liquidated: ${formatCurrency(totalRentLiquidation)}</div>` : ''}
+                        ${renterPortfolioDepletedYear ? `<div class="detail" style="color: #dc3545; font-weight: bold;">⚠️ Portfolio Depleted: Year ${renterPortfolioDepletedYear.toFixed(1)}</div>` : ''}
+                        ${renterBankruptcyYear ? `<div class="detail" style="color: #dc3545; font-weight: bold;">💥 BANKRUPTCY: Year ${renterBankruptcyYear.toFixed(1)} - Cannot cover rent payments</div>` : ''}
                         <div class="detail">• Total Paid: ${formatCurrency(totalRentPaid)}</div>
                     </div>
                 </div>
