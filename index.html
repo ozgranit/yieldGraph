@@ -605,10 +605,20 @@
 
                 // Calculate house value and net equity
                 const houseValue = houseWorth * Math.pow(housingGrowthMultiplier, year);
-                housingValues.push(houseValue - remainingMortgage + housingInvestBalance);
 
-                // Record renter's balance
-                rentAndInvestValues.push(rentInvestBalance);
+                // If buyer went bankrupt, net worth is 0 from that point
+                if (buyerBankruptcyYear !== null && year >= Math.floor(buyerBankruptcyYear)) {
+                    housingValues.push(0);
+                } else {
+                    housingValues.push(houseValue - remainingMortgage + housingInvestBalance);
+                }
+
+                // If renter went bankrupt, net worth is 0 from that point
+                if (renterBankruptcyYear !== null && year >= Math.floor(renterBankruptcyYear)) {
+                    rentAndInvestValues.push(0);
+                } else {
+                    rentAndInvestValues.push(rentInvestBalance);
+                }
 
                 // Track data for additional charts
                 rentPayments.push(currentMonthlyRent);
@@ -621,84 +631,84 @@
                 // Process monthly changes for the next year
                 if (year < 30) {
                     for (let month = 0; month < 12; month++) {
-                        // Pay down mortgage
-                        if (remainingMortgage > 0) {
-                            const principalPayment = monthlyMortgagePayment - (remainingMortgage * monthlyMortgageRate);
-                            remainingMortgage = Math.max(0, remainingMortgage - principalPayment);
-                            totalMortgagePaid += monthlyMortgagePayment;
-                        }
+                        // Only process buyer transactions if not bankrupt
+                        if (buyerBankruptcyYear === null) {
+                            // Pay down mortgage
+                            if (remainingMortgage > 0) {
+                                const principalPayment = monthlyMortgagePayment - (remainingMortgage * monthlyMortgageRate);
+                                remainingMortgage = Math.max(0, remainingMortgage - principalPayment);
+                                totalMortgagePaid += monthlyMortgagePayment;
+                            }
 
-                        // Track rent paid
-                        totalRentPaid += currentMonthlyRent;
+                            // Calculate how much buyer can invest from available income
+                            const buyerLeftover = availableIncome - monthlyMortgagePayment;
 
-                        // Calculate how much each can invest from available income
-                        const buyerLeftover = availableIncome - monthlyMortgagePayment;
-                        const renterLeftover = availableIncome - currentMonthlyRent;
-
-                        // Buyer: if leftover is positive, invest it; if negative, liquidate from portfolio
-                        if (buyerLeftover > 0) {
-                            totalHousingInvestment += buyerLeftover;
-                            housingInvestBalance = (housingInvestBalance + buyerLeftover) * monthlyGrowthMultiplier;
-                        } else if (buyerLeftover < 0) {
-                            // Need to liquidate investments to cover shortfall
-                            const shortfall = Math.abs(buyerLeftover);
-
-                            if (housingInvestBalance >= shortfall) {
-                                // Can cover from portfolio
-                                totalHousingLiquidation += shortfall;
+                            // Buyer: if leftover is positive, invest it; if negative, liquidate from portfolio
+                            if (buyerLeftover > 0) {
+                                totalHousingInvestment += buyerLeftover;
                                 housingInvestBalance = (housingInvestBalance + buyerLeftover) * monthlyGrowthMultiplier;
-                            } else if (housingInvestBalance > 0) {
-                                // Partial coverage - portfolio depleted this month
-                                totalHousingLiquidation += housingInvestBalance;
-                                housingInvestBalance = 0;
-                                if (!buyerPortfolioDepletedYear) {
-                                    buyerPortfolioDepletedYear = year + (month / 12);
-                                }
-                                // Mark bankruptcy - cannot cover full payment
-                                if (!buyerBankruptcyYear) {
+                            } else if (buyerLeftover < 0) {
+                                // Need to liquidate investments to cover shortfall
+                                const shortfall = Math.abs(buyerLeftover);
+
+                                if (housingInvestBalance >= shortfall) {
+                                    // Can cover from portfolio
+                                    totalHousingLiquidation += shortfall;
+                                    housingInvestBalance = (housingInvestBalance + buyerLeftover) * monthlyGrowthMultiplier;
+                                } else if (housingInvestBalance > 0) {
+                                    // Partial coverage - portfolio depleted this month
+                                    totalHousingLiquidation += housingInvestBalance;
+                                    housingInvestBalance = 0;
+                                    if (!buyerPortfolioDepletedYear) {
+                                        buyerPortfolioDepletedYear = year + (month / 12);
+                                    }
+                                    // Mark bankruptcy - cannot cover full payment
+                                    buyerBankruptcyYear = year + (month / 12);
+                                } else {
+                                    // Portfolio already empty - bankruptcy
                                     buyerBankruptcyYear = year + (month / 12);
                                 }
                             } else {
-                                // Portfolio already empty - bankruptcy continues
-                                if (!buyerBankruptcyYear) {
-                                    buyerBankruptcyYear = year + (month / 12);
-                                }
+                                housingInvestBalance = housingInvestBalance * monthlyGrowthMultiplier;
                             }
-                        } else {
-                            housingInvestBalance = housingInvestBalance * monthlyGrowthMultiplier;
                         }
 
-                        // Renter: if leftover is positive, invest it; if negative, liquidate from portfolio
-                        if (renterLeftover > 0) {
-                            totalRentInvestment += renterLeftover;
-                            rentInvestBalance = (rentInvestBalance + renterLeftover) * monthlyGrowthMultiplier;
-                        } else if (renterLeftover < 0) {
-                            // Need to liquidate investments to cover shortfall
-                            const shortfall = Math.abs(renterLeftover);
+                        // Only process renter transactions if not bankrupt
+                        if (renterBankruptcyYear === null) {
+                            // Track rent paid
+                            totalRentPaid += currentMonthlyRent;
 
-                            if (rentInvestBalance >= shortfall) {
-                                // Can cover from portfolio
-                                totalRentLiquidation += shortfall;
+                            // Calculate how much renter can invest from available income
+                            const renterLeftover = availableIncome - currentMonthlyRent;
+
+                            // Renter: if leftover is positive, invest it; if negative, liquidate from portfolio
+                            if (renterLeftover > 0) {
+                                totalRentInvestment += renterLeftover;
                                 rentInvestBalance = (rentInvestBalance + renterLeftover) * monthlyGrowthMultiplier;
-                            } else if (rentInvestBalance > 0) {
-                                // Partial coverage - portfolio depleted this month
-                                totalRentLiquidation += rentInvestBalance;
-                                rentInvestBalance = 0;
-                                if (!renterPortfolioDepletedYear) {
-                                    renterPortfolioDepletedYear = year + (month / 12);
-                                }
-                                // Mark bankruptcy - cannot cover full payment
-                                if (!renterBankruptcyYear) {
+                            } else if (renterLeftover < 0) {
+                                // Need to liquidate investments to cover shortfall
+                                const shortfall = Math.abs(renterLeftover);
+
+                                if (rentInvestBalance >= shortfall) {
+                                    // Can cover from portfolio
+                                    totalRentLiquidation += shortfall;
+                                    rentInvestBalance = (rentInvestBalance + renterLeftover) * monthlyGrowthMultiplier;
+                                } else if (rentInvestBalance > 0) {
+                                    // Partial coverage - portfolio depleted this month
+                                    totalRentLiquidation += rentInvestBalance;
+                                    rentInvestBalance = 0;
+                                    if (!renterPortfolioDepletedYear) {
+                                        renterPortfolioDepletedYear = year + (month / 12);
+                                    }
+                                    // Mark bankruptcy - cannot cover full payment
+                                    renterBankruptcyYear = year + (month / 12);
+                                } else {
+                                    // Portfolio already empty - bankruptcy
                                     renterBankruptcyYear = year + (month / 12);
                                 }
                             } else {
-                                // Portfolio already empty - bankruptcy continues
-                                if (!renterBankruptcyYear) {
-                                    renterBankruptcyYear = year + (month / 12);
-                                }
+                                rentInvestBalance = rentInvestBalance * monthlyGrowthMultiplier;
                             }
-                        } else {
-                            rentInvestBalance = rentInvestBalance * monthlyGrowthMultiplier;
                         }
                     }
                     currentMonthlyRent *= rentGrowthMultiplier;
