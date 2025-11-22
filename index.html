@@ -91,6 +91,33 @@
             transform: translateY(0);
         }
 
+        button:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        button:disabled:hover {
+            transform: none;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 0.8s linear infinite;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
         #calculationSummary {
             background-color: white;
             padding: 30px;
@@ -567,6 +594,33 @@
         }
 
         function plotGraph() {
+            // Get button and set loading state
+            const button = document.querySelector('button');
+            const originalText = button.innerHTML;
+            button.disabled = true;
+            button.innerHTML = '<span class="spinner"></span>Calculating...';
+
+            // Helper to reset button
+            const resetButton = () => {
+                button.disabled = false;
+                button.innerHTML = originalText;
+            };
+
+            // Use setTimeout to allow the UI to update before heavy computation
+            setTimeout(() => {
+                try {
+                    performCalculation(resetButton);
+                } catch (error) {
+                    resetButton();
+                    throw error;
+                } finally {
+                    // Always reset button state after calculation
+                    resetButton();
+                }
+            }, 10);
+        }
+
+        function performCalculation(resetButton) {
             // Parse and convert inputs
             const investment = parseFloat(document.getElementById('stockInvestment').value) * 1000000;
             const houseWorth = parseFloat(document.getElementById('mortgageValue').value) * 1000000;
@@ -607,16 +661,19 @@
 
             for (const { value, condition, msg } of validations) {
                 if (isNaN(value) || condition) {
+                    resetButton();
                     alert(msg);
                     return;
                 }
             }
 
             if (isNaN(monthlyRent) || monthlyRent < 0 || isNaN(rentGrowthRate) || rentGrowthRate < 0) {
+                resetButton();
                 alert('Please enter valid rent values');
                 return;
             }
             if (isNaN(yieldRate) || yieldRate <= 0 || isNaN(housingYield) || housingYield <= 0) {
+                resetButton();
                 alert('Please enter valid yield percentages');
                 return;
             }
@@ -642,6 +699,7 @@
 
             if (warningMessage) {
                 if (!confirm(warningMessage + 'Do you want to continue with this calculation?')) {
+                    resetButton();
                     return;
                 }
             }
