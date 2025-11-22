@@ -434,12 +434,45 @@
         let stockChart = null;
 
         function toggleAdditionalCosts() {
-            const additionalCostsSection = document.getElementById('additionalCostsSection');
-            if (document.getElementById('additionalCosts').checked) {
-                additionalCostsSection.classList.add('visible');
+            document.getElementById('additionalCostsSection')
+                .classList.toggle('visible', document.getElementById('additionalCosts').checked);
+        }
+
+        // Helper function to format currency
+        const formatCurrency = val => '₪' + Math.round(val).toLocaleString();
+
+        // Helper function to get responsive font size
+        const getFontSize = (mobileSize, desktopSize) => window.innerWidth < 768 ? mobileSize : desktopSize;
+
+        // Helper function to process monthly payment and investment
+        function processMonthlyPayment(payment, availableIncome, balance, totalInvestment, totalLiquidation,
+                                       monthlyGrowthMultiplier, bankruptcyYear, portfolioDepletedYear, year, month) {
+            const leftover = availableIncome - payment;
+
+            if (leftover > 0) {
+                totalInvestment += leftover;
+                balance = (balance + leftover) * monthlyGrowthMultiplier;
+            } else if (leftover < 0) {
+                const shortfall = Math.abs(leftover);
+
+                if (balance >= shortfall) {
+                    totalLiquidation += shortfall;
+                    balance = (balance + leftover) * monthlyGrowthMultiplier;
+                } else if (balance > 0) {
+                    totalLiquidation += balance;
+                    balance = 0;
+                    if (!portfolioDepletedYear) {
+                        portfolioDepletedYear = year + (month / 12);
+                    }
+                    bankruptcyYear = year + (month / 12);
+                } else {
+                    bankruptcyYear = year + (month / 12);
+                }
             } else {
-                additionalCostsSection.classList.remove('visible');
+                balance = balance * monthlyGrowthMultiplier;
             }
+
+            return { balance, totalInvestment, totalLiquidation, bankruptcyYear, portfolioDepletedYear };
         }
 
         /**
@@ -516,32 +549,27 @@
             const mortgage = houseWorth - investment + totalFees;
 
             // Validate inputs
-            if (isNaN(investment) || investment <= 0) {
-                alert('Please enter a valid investment amount');
-                return;
+            const validations = [
+                { value: investment, condition: investment <= 0, msg: 'Please enter a valid investment amount' },
+                { value: houseWorth, condition: houseWorth < 0, msg: 'Please enter a valid house worth' },
+                { value: mortgage, condition: mortgage < 0, msg: 'House worth must be greater than or equal to initial investment' },
+                { value: mortgageRate, condition: mortgageRate < 0, msg: 'Please enter valid mortgage rate' },
+                { value: availableIncome, condition: availableIncome <= 0, msg: 'Please enter valid available income' }
+            ];
+
+            for (const { value, condition, msg } of validations) {
+                if (isNaN(value) || condition) {
+                    alert(msg);
+                    return;
+                }
             }
-            if (isNaN(houseWorth) || houseWorth < 0) {
-                alert('Please enter a valid house worth');
-                return;
-            }
-            if (mortgage < 0) {
-                alert('House worth must be greater than or equal to initial investment');
-                return;
-            }
-            if (isNaN(mortgageRate) || mortgageRate < 0) {
-                alert('Please enter valid mortgage rate');
-                return;
-            }
+
             if (isNaN(monthlyRent) || monthlyRent < 0 || isNaN(rentGrowthRate) || rentGrowthRate < 0) {
                 alert('Please enter valid rent values');
                 return;
             }
             if (isNaN(yieldRate) || yieldRate <= 0 || isNaN(housingYield) || housingYield <= 0) {
                 alert('Please enter valid yield percentages');
-                return;
-            }
-            if (isNaN(availableIncome) || availableIncome <= 0) {
-                alert('Please enter valid available income');
                 return;
             }
 
@@ -640,75 +668,34 @@
                                 totalMortgagePaid += monthlyMortgagePayment;
                             }
 
-                            // Calculate how much buyer can invest from available income
-                            const buyerLeftover = availableIncome - monthlyMortgagePayment;
+                            const result = processMonthlyPayment(
+                                monthlyMortgagePayment, availableIncome, housingInvestBalance,
+                                totalHousingInvestment, totalHousingLiquidation, monthlyGrowthMultiplier,
+                                buyerBankruptcyYear, buyerPortfolioDepletedYear, year, month
+                            );
 
-                            // Buyer: if leftover is positive, invest it; if negative, liquidate from portfolio
-                            if (buyerLeftover > 0) {
-                                totalHousingInvestment += buyerLeftover;
-                                housingInvestBalance = (housingInvestBalance + buyerLeftover) * monthlyGrowthMultiplier;
-                            } else if (buyerLeftover < 0) {
-                                // Need to liquidate investments to cover shortfall
-                                const shortfall = Math.abs(buyerLeftover);
-
-                                if (housingInvestBalance >= shortfall) {
-                                    // Can cover from portfolio
-                                    totalHousingLiquidation += shortfall;
-                                    housingInvestBalance = (housingInvestBalance + buyerLeftover) * monthlyGrowthMultiplier;
-                                } else if (housingInvestBalance > 0) {
-                                    // Partial coverage - portfolio depleted this month
-                                    totalHousingLiquidation += housingInvestBalance;
-                                    housingInvestBalance = 0;
-                                    if (!buyerPortfolioDepletedYear) {
-                                        buyerPortfolioDepletedYear = year + (month / 12);
-                                    }
-                                    // Mark bankruptcy - cannot cover full payment
-                                    buyerBankruptcyYear = year + (month / 12);
-                                } else {
-                                    // Portfolio already empty - bankruptcy
-                                    buyerBankruptcyYear = year + (month / 12);
-                                }
-                            } else {
-                                housingInvestBalance = housingInvestBalance * monthlyGrowthMultiplier;
-                            }
+                            housingInvestBalance = result.balance;
+                            totalHousingInvestment = result.totalInvestment;
+                            totalHousingLiquidation = result.totalLiquidation;
+                            buyerBankruptcyYear = result.bankruptcyYear;
+                            buyerPortfolioDepletedYear = result.portfolioDepletedYear;
                         }
 
                         // Only process renter transactions if not bankrupt
                         if (renterBankruptcyYear === null) {
-                            // Track rent paid
                             totalRentPaid += currentMonthlyRent;
 
-                            // Calculate how much renter can invest from available income
-                            const renterLeftover = availableIncome - currentMonthlyRent;
+                            const result = processMonthlyPayment(
+                                currentMonthlyRent, availableIncome, rentInvestBalance,
+                                totalRentInvestment, totalRentLiquidation, monthlyGrowthMultiplier,
+                                renterBankruptcyYear, renterPortfolioDepletedYear, year, month
+                            );
 
-                            // Renter: if leftover is positive, invest it; if negative, liquidate from portfolio
-                            if (renterLeftover > 0) {
-                                totalRentInvestment += renterLeftover;
-                                rentInvestBalance = (rentInvestBalance + renterLeftover) * monthlyGrowthMultiplier;
-                            } else if (renterLeftover < 0) {
-                                // Need to liquidate investments to cover shortfall
-                                const shortfall = Math.abs(renterLeftover);
-
-                                if (rentInvestBalance >= shortfall) {
-                                    // Can cover from portfolio
-                                    totalRentLiquidation += shortfall;
-                                    rentInvestBalance = (rentInvestBalance + renterLeftover) * monthlyGrowthMultiplier;
-                                } else if (rentInvestBalance > 0) {
-                                    // Partial coverage - portfolio depleted this month
-                                    totalRentLiquidation += rentInvestBalance;
-                                    rentInvestBalance = 0;
-                                    if (!renterPortfolioDepletedYear) {
-                                        renterPortfolioDepletedYear = year + (month / 12);
-                                    }
-                                    // Mark bankruptcy - cannot cover full payment
-                                    renterBankruptcyYear = year + (month / 12);
-                                } else {
-                                    // Portfolio already empty - bankruptcy
-                                    renterBankruptcyYear = year + (month / 12);
-                                }
-                            } else {
-                                rentInvestBalance = rentInvestBalance * monthlyGrowthMultiplier;
-                            }
+                            rentInvestBalance = result.balance;
+                            totalRentInvestment = result.totalInvestment;
+                            totalRentLiquidation = result.totalLiquidation;
+                            renterBankruptcyYear = result.bankruptcyYear;
+                            renterPortfolioDepletedYear = result.portfolioDepletedYear;
                         }
                     }
                     currentMonthlyRent *= rentGrowthMultiplier;
@@ -717,6 +704,24 @@
 
             // Create/update chart
             if (myChart) myChart.destroy();
+
+            const commonChartOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        title: { display: true, text: 'Years', font: { size: getFontSize(11, 12) } },
+                        ticks: { font: { size: getFontSize(10, 11) } }
+                    },
+                    y: {
+                        title: { display: true, font: { size: getFontSize(11, 12) } },
+                        ticks: {
+                            callback: value => formatCurrency(value),
+                            font: { size: getFontSize(10, 11) }
+                        }
+                    }
+                }
+            };
 
             const ctx = document.getElementById('investmentChart').getContext('2d');
             myChart = new Chart(ctx, {
@@ -740,54 +745,23 @@
                     }]
                 },
                 options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
+                    ...commonChartOptions,
                     plugins: {
                         title: {
                             display: true,
                             text: '30-Year Comparison: Buy House vs Rent + Invest',
-                            font: {
-                                size: window.innerWidth < 768 ? 14 : 16
-                            }
+                            font: { size: getFontSize(14, 16) }
                         },
                         legend: {
                             display: true,
-                            labels: {
-                                font: {
-                                    size: window.innerWidth < 768 ? 11 : 12
-                                }
-                            }
+                            labels: { font: { size: getFontSize(11, 12) } }
                         }
                     },
                     scales: {
-                        x: {
-                            title: {
-                                display: true,
-                                text: 'Years',
-                                font: {
-                                    size: window.innerWidth < 768 ? 11 : 12
-                                }
-                            },
-                            ticks: {
-                                font: {
-                                    size: window.innerWidth < 768 ? 10 : 11
-                                }
-                            }
-                        },
+                        ...commonChartOptions.scales,
                         y: {
-                            title: {
-                                display: true,
-                                text: 'Net Worth (NIS)',
-                                font: {
-                                    size: window.innerWidth < 768 ? 11 : 12
-                                }
-                            },
-                            ticks: {
-                                callback: value => '₪' + Math.round(value).toLocaleString(),
-                                font: {
-                                    size: window.innerWidth < 768 ? 10 : 11
-                                }
-                            }
+                            ...commonChartOptions.scales.y,
+                            title: { display: true, text: 'Net Worth (NIS)', font: { size: getFontSize(11, 12) } }
                         }
                     }
                 }
@@ -818,30 +792,23 @@
                     }]
                 },
                 options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
+                    ...commonChartOptions,
                     plugins: {
                         title: {
                             display: true,
                             text: 'Monthly Housing Costs Over Time',
-                            font: { size: window.innerWidth < 768 ? 14 : 16 }
+                            font: { size: getFontSize(14, 16) }
                         },
                         legend: {
                             display: true,
-                            labels: { font: { size: window.innerWidth < 768 ? 11 : 12 } }
+                            labels: { font: { size: getFontSize(11, 12) } }
                         }
                     },
                     scales: {
-                        x: {
-                            title: { display: true, text: 'Years', font: { size: window.innerWidth < 768 ? 11 : 12 } },
-                            ticks: { font: { size: window.innerWidth < 768 ? 10 : 11 } }
-                        },
+                        ...commonChartOptions.scales,
                         y: {
-                            title: { display: true, text: 'Monthly Payment (NIS)', font: { size: window.innerWidth < 768 ? 11 : 12 } },
-                            ticks: {
-                                callback: value => '₪' + Math.round(value).toLocaleString(),
-                                font: { size: window.innerWidth < 768 ? 10 : 11 }
-                            }
+                            ...commonChartOptions.scales.y,
+                            title: { display: true, text: 'Monthly Payment (NIS)', font: { size: getFontSize(11, 12) } }
                         }
                     }
                 }
@@ -872,30 +839,23 @@
                     }]
                 },
                 options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
+                    ...commonChartOptions,
                     plugins: {
                         title: {
                             display: true,
                             text: 'House Value vs Renter Initial Investment Growth',
-                            font: { size: window.innerWidth < 768 ? 14 : 16 }
+                            font: { size: getFontSize(14, 16) }
                         },
                         legend: {
                             display: true,
-                            labels: { font: { size: window.innerWidth < 768 ? 11 : 12 } }
+                            labels: { font: { size: getFontSize(11, 12) } }
                         }
                     },
                     scales: {
-                        x: {
-                            title: { display: true, text: 'Years', font: { size: window.innerWidth < 768 ? 11 : 12 } },
-                            ticks: { font: { size: window.innerWidth < 768 ? 10 : 11 } }
-                        },
+                        ...commonChartOptions.scales,
                         y: {
-                            title: { display: true, text: 'Value (NIS)', font: { size: window.innerWidth < 768 ? 11 : 12 } },
-                            ticks: {
-                                callback: value => '₪' + Math.round(value).toLocaleString(),
-                                font: { size: window.innerWidth < 768 ? 10 : 11 }
-                            }
+                            ...commonChartOptions.scales.y,
+                            title: { display: true, text: 'Value (NIS)', font: { size: getFontSize(11, 12) } }
                         }
                     }
                 }
