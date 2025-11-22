@@ -264,6 +264,29 @@
             display: block;
         }
 
+        .info-explanation-box {
+            background-color: #e8f4fd;
+            border: 2px solid #4a90e2;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            font-size: 0.95em;
+            line-height: 1.6;
+        }
+
+        .info-explanation-box strong {
+            color: #2c5aa0;
+        }
+
+        .info-explanation-box ul {
+            margin: 10px 0 0 0;
+            padding-left: 20px;
+        }
+
+        .info-explanation-box li {
+            margin: 6px 0;
+        }
+
         @media (max-width: 768px) {
             body {
                 padding: 10px;
@@ -344,6 +367,18 @@
         <div class="buyer-column">
             <div class="column-header">🏠 Home Buyer</div>
 
+            <div id="buyerInfoBox" class="info-explanation-box">
+                <strong>📘 How the Buyer Scenario Works:</strong>
+                <ul>
+                    <li>You put down your <strong>Initial Investment</strong> as a down payment</li>
+                    <li>The remaining amount (plus fees) becomes your <strong>mortgage</strong></li>
+                    <li>You pay a <strong>fixed monthly mortgage</strong> for 30 years</li>
+                    <li>Any income left after the mortgage payment gets <strong>invested in S&P 500</strong></li>
+                    <li>Your net worth = <strong>House Value - Remaining Mortgage + Stock Portfolio</strong></li>
+                    <li>The house appreciates at the <strong>Housing Yield</strong> rate</li>
+                </ul>
+            </div>
+
             <div class="input-container">
                 <label for="mortgageValue">House Worth (Millions):</label>
                 <input type="number" id="mortgageValue" placeholder="e.g., 3.1" step="0.01" value="3.1">
@@ -388,6 +423,18 @@
 
         <div class="renter-column">
             <div class="column-header">📈 Renter</div>
+
+            <div id="renterInfoBox" class="info-explanation-box">
+                <strong>📘 How the Renter Scenario Works:</strong>
+                <ul>
+                    <li>You invest your full <strong>Initial Investment</strong> in S&P 500</li>
+                    <li>You pay <strong>monthly rent</strong> (which grows annually)</li>
+                    <li>Any income left after rent gets <strong>invested in S&P 500</strong></li>
+                    <li>Your net worth = <strong>Total Stock Portfolio</strong></li>
+                    <li>Your portfolio grows at the <strong>Expected S&P Yield</strong> rate</li>
+                    <li>No mortgage, no property maintenance, full liquidity</li>
+                </ul>
+            </div>
 
             <div class="input-container">
                 <label for="monthlyRent">Monthly Rent:</label>
@@ -876,6 +923,12 @@
             // Show chart containers
             document.getElementById('chartContainer').style.display = 'block';
             document.getElementById('chartsGrid').style.display = 'grid';
+
+            // Hide information boxes
+            const buyerInfoBox = document.getElementById('buyerInfoBox');
+            const renterInfoBox = document.getElementById('renterInfoBox');
+            if (buyerInfoBox) buyerInfoBox.style.display = 'none';
+            if (renterInfoBox) renterInfoBox.style.display = 'none';
         }
 
         function updateSummary(monthlyRent, monthlyMortgagePayment, rentGrowthMultiplier,
