@@ -973,7 +973,20 @@
             // Determine winner icon
             const winnerIcon = winner === 'Buy House' ? '🏠' : '📈';
 
-            let strategyHtml = `
+            // Build bankruptcy warnings if any
+            let bankruptcyWarnings = '';
+            if (buyerBankruptcyYear !== null || renterBankruptcyYear !== null) {
+                bankruptcyWarnings = '<div style="background-color: #fff3cd; border: 2px solid #ffc107; border-radius: 10px; padding: 15px; margin-bottom: 20px;">';
+                if (buyerBankruptcyYear !== null) {
+                    bankruptcyWarnings += `<p style="margin: 5px 0; color: #856404;"><strong>💥 BUYER BANKRUPTCY:</strong> Year ${buyerBankruptcyYear.toFixed(1)} - Cannot cover mortgage payments from income + portfolio</p>`;
+                }
+                if (renterBankruptcyYear !== null) {
+                    bankruptcyWarnings += `<p style="margin: 5px 0; color: #856404;"><strong>💥 RENTER BANKRUPTCY:</strong> Year ${renterBankruptcyYear.toFixed(1)} - Cannot cover rent payments from income + portfolio</p>`;
+                }
+                bankruptcyWarnings += '</div>';
+            }
+
+            let strategyHtml = bankruptcyWarnings + `
                 <div class="value-breakdown">
                     <div class="value-card buyer">
                         <h4>🏠 Buy House</h4>
