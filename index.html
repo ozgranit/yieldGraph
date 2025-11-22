@@ -361,12 +361,12 @@
 
             <div class="input-container">
                 <label for="additionalCosts">
-                    <input type="checkbox" id="additionalCosts" style="width: auto; margin-right: 10px;" onchange="toggleAdditionalCosts()">
+                    <input type="checkbox" id="additionalCosts" style="width: auto; margin-right: 10px;" onchange="toggleAdditionalCosts()" checked>
                     Include Additional Costs
                 </label>
             </div>
 
-            <div id="additionalCostsSection" class="additional-costs-section">
+            <div id="additionalCostsSection" class="additional-costs-section visible">
                 <div class="input-container">
                     <label for="realtorFee">Realtor Fee (%):</label>
                     <input type="number" id="realtorFee" placeholder="e.g., 2" step="0.1" value="2">
@@ -587,6 +587,14 @@
             let remainingMortgage = mortgage;
             let currentMonthlyRent = monthlyRent;
 
+            // Track total investments and liquidations
+            let totalHousingInvestment = 0;
+            let totalRentInvestment = 0;
+            let totalHousingLiquidation = 0;
+            let totalRentLiquidation = 0;
+            let totalMortgagePaid = 0;
+            let totalRentPaid = 0;
+
             // Calculate 30-year projections
             for (let year = 0; year <= 30; year++) {
                 years.push(year);
@@ -613,7 +621,11 @@
                         if (remainingMortgage > 0) {
                             const principalPayment = monthlyMortgagePayment - (remainingMortgage * monthlyMortgageRate);
                             remainingMortgage = Math.max(0, remainingMortgage - principalPayment);
+                            totalMortgagePaid += monthlyMortgagePayment;
                         }
+
+                        // Track rent paid
+                        totalRentPaid += currentMonthlyRent;
 
                         // Calculate how much each can invest from available income
                         const buyerLeftover = availableIncome - monthlyMortgagePayment;
@@ -621,9 +633,11 @@
 
                         // Buyer: if leftover is positive, invest it; if negative, liquidate from portfolio
                         if (buyerLeftover > 0) {
+                            totalHousingInvestment += buyerLeftover;
                             housingInvestBalance = (housingInvestBalance + buyerLeftover) * monthlyGrowthMultiplier;
                         } else if (buyerLeftover < 0) {
                             // Need to liquidate investments to cover shortfall
+                            totalHousingLiquidation += Math.abs(buyerLeftover);
                             housingInvestBalance = Math.max(0, (housingInvestBalance + buyerLeftover) * monthlyGrowthMultiplier);
                         } else {
                             housingInvestBalance = housingInvestBalance * monthlyGrowthMultiplier;
@@ -631,9 +645,11 @@
 
                         // Renter: if leftover is positive, invest it; if negative, liquidate from portfolio
                         if (renterLeftover > 0) {
+                            totalRentInvestment += renterLeftover;
                             rentInvestBalance = (rentInvestBalance + renterLeftover) * monthlyGrowthMultiplier;
                         } else if (renterLeftover < 0) {
                             // Need to liquidate investments to cover shortfall
+                            totalRentLiquidation += Math.abs(renterLeftover);
                             rentInvestBalance = Math.max(0, (rentInvestBalance + renterLeftover) * monthlyGrowthMultiplier);
                         } else {
                             rentInvestBalance = rentInvestBalance * monthlyGrowthMultiplier;
