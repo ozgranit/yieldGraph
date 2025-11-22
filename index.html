@@ -415,11 +415,11 @@
         <div id="strategyInfo" class="summary-section"></div>
     </div>
 
-    <div id="chartContainer">
+    <div id="chartContainer" style="display: none;">
         <canvas id="investmentChart"></canvas>
     </div>
 
-    <div class="charts-grid">
+    <div class="charts-grid" id="chartsGrid" style="display: none;">
         <div class="chart-box">
             <canvas id="stockPortfolioChart"></canvas>
         </div>
@@ -872,6 +872,10 @@
                          houseWorth, housingYield, totalHousingInvestment, totalRentInvestment,
                          totalHousingLiquidation, totalRentLiquidation, totalMortgagePaid, totalRentPaid,
                          buyerBankruptcyYear, renterBankruptcyYear, buyerPortfolioDepletedYear, renterPortfolioDepletedYear);
+
+            // Show chart containers
+            document.getElementById('chartContainer').style.display = 'block';
+            document.getElementById('chartsGrid').style.display = 'grid';
         }
 
         function updateSummary(monthlyRent, monthlyMortgagePayment, rentGrowthMultiplier,
