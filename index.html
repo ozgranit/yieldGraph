@@ -893,15 +893,19 @@
                 }
             }
 
-            // Find when net worth advantage switches
+            // Find when the final winner overtakes (last crossover point)
             let wealthSwitchYear = null;
-            let initialWinner = housingValues[0] > rentAndInvestValues[0] ? 'housing' : 'rent';
+            const finalWinner = housingValues[30] > rentAndInvestValues[30] ? 'housing' : 'rent';
 
-            for (let y = 1; y <= 30; y++) {
+            // Search backwards from year 30 to find when final winner first took the lead
+            for (let y = 29; y >= 1; y--) {
                 const housingLeading = housingValues[y] > rentAndInvestValues[y];
                 const currentWinner = housingLeading ? 'housing' : 'rent';
+                const previousHousingLeading = housingValues[y-1] > rentAndInvestValues[y-1];
+                const previousWinner = previousHousingLeading ? 'housing' : 'rent';
 
-                if (currentWinner !== initialWinner) {
+                // Found the point where final winner overtook
+                if (currentWinner === finalWinner && previousWinner !== finalWinner) {
                     wealthSwitchYear = y;
                     break;
                 }
@@ -946,9 +950,9 @@
                     initialDifference < 0 ? 'Rent becomes higher than mortgage' : 'Mortgage becomes higher than rent'}`;
             }
             if (wealthSwitchYear) {
-                const switchDirection = initialWinner === 'housing'
-                    ? 'Rent + Invest overtakes Buy House'
-                    : 'Buy House overtakes Rent + Invest';
+                const switchDirection = finalWinner === 'housing'
+                    ? 'Buy House overtakes Rent + Invest (and stays ahead)'
+                    : 'Rent + Invest overtakes Buy House (and stays ahead)';
                 switchInfo += `<br><strong>⚡ Wealth Switch Point:</strong> Year ${wealthSwitchYear} - ${switchDirection}`;
             }
 
