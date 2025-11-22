@@ -444,6 +444,10 @@
         // Helper function to get responsive font size
         const getFontSize = (mobileSize, desktopSize) => window.innerWidth < 768 ? mobileSize : desktopSize;
 
+        // Helper function to create conditional detail line
+        const detailLine = (condition, content, isError = false) =>
+            condition ? `<div class="detail"${isError ? ' style="color: #dc3545; font-weight: bold;"' : ''}>${content}</div>` : '';
+
         // Helper function to process monthly payment and investment
         function processMonthlyPayment(payment, availableIncome, balance, totalInvestment, totalLiquidation,
                                        monthlyGrowthMultiplier, bankruptcyYear, portfolioDepletedYear, year, month) {
@@ -917,53 +921,44 @@
             const winner = finalHousingValue > finalRentValue ? 'Buy House' : 'Rent + Invest';
             const advantage = Math.abs(finalHousingValue - finalRentValue);
 
-            // Display summary
-            const formatCurrency = val => '₪' + Math.round(val).toLocaleString();
 
             // Display fees information if applicable
             let feesHtml = '';
             if (includeAdditionalCosts && totalFees > 0) {
-                feesHtml = `<div class="fees-box">` +
-                    `<strong>Additional Costs Added to Mortgage:</strong><br>` +
-                    `&nbsp;&nbsp;&nbsp;• Realtor Fee: ${formatCurrency(realtorFeeAmount)}<br>` +
-                    `&nbsp;&nbsp;&nbsp;• Lawyer Fee: ${formatCurrency(lawyerFeeAmount)}<br>`;
-
-                if (buyerTaxAmount > 0) {
-                    feesHtml += `&nbsp;&nbsp;&nbsp;• Purchase Tax: ${formatCurrency(buyerTaxAmount)}<br>`;
-                }
-
-                feesHtml += `&nbsp;&nbsp;&nbsp;• <strong>Total Fees: ${formatCurrency(totalFees)}</strong>` +
-                    `</div>`;
+                feesHtml = `<div class="fees-box">
+                    <strong>Additional Costs Added to Mortgage:</strong><br>
+                    &nbsp;&nbsp;&nbsp;• Realtor Fee: ${formatCurrency(realtorFeeAmount)}<br>
+                    &nbsp;&nbsp;&nbsp;• Lawyer Fee: ${formatCurrency(lawyerFeeAmount)}<br>
+                    ${buyerTaxAmount > 0 ? `&nbsp;&nbsp;&nbsp;• Purchase Tax: ${formatCurrency(buyerTaxAmount)}<br>` : ''}
+                    &nbsp;&nbsp;&nbsp;• <strong>Total Fees: ${formatCurrency(totalFees)}</strong>
+                </div>`;
             }
 
             // Mortgage payment section
-            let mortgageHtml = feesHtml +
-                `<p><strong>Total Mortgage Taken:</strong> ${formatCurrency(mortgage)}<br>` +
-                `<strong>Monthly Mortgage Payment (Fixed):</strong> ${mortgage > 0 ? formatCurrency(monthlyMortgagePayment) : '₪0 (no mortgage)'}</p>`;
+            const mortgageHtml = `${feesHtml}
+                <p><strong>Total Mortgage Taken:</strong> ${formatCurrency(mortgage)}<br>
+                <strong>Monthly Mortgage Payment (Fixed):</strong> ${mortgage > 0 ? formatCurrency(monthlyMortgagePayment) : '₪0 (no mortgage)'}</p>`;
 
             document.getElementById('mortgagePaymentInfo').innerHTML = mortgageHtml;
 
             // Monthly costs and switch points section
-            let switchInfo = '';
-            if (costSwitchYear) {
-                switchInfo = `<br><strong>💡 Cost Switch Point:</strong> Year ${costSwitchYear} - ${
-                    initialDifference < 0 ? 'Rent becomes higher than mortgage' : 'Mortgage becomes higher than rent'}`;
-            }
-            if (wealthSwitchYear) {
-                const switchDirection = finalWinner === 'housing'
-                    ? 'Buy House overtakes Rent + Invest (and stays ahead)'
-                    : 'Rent + Invest overtakes Buy House (and stays ahead)';
-                switchInfo += `<br><strong>⚡ Wealth Switch Point:</strong> Year ${wealthSwitchYear} - ${switchDirection}`;
-            }
+            const switchInfo = `
+                ${costSwitchYear ? `<br><strong>💡 Cost Switch Point:</strong> Year ${costSwitchYear} - ${
+                    initialDifference < 0 ? 'Rent becomes higher than mortgage' : 'Mortgage becomes higher than rent'}` : ''}
+                ${wealthSwitchYear ? `<br><strong>⚡ Wealth Switch Point:</strong> Year ${wealthSwitchYear} - ${
+                    finalWinner === 'housing'
+                        ? 'Buy House overtakes Rent + Invest (and stays ahead)'
+                        : 'Rent + Invest overtakes Buy House (and stays ahead)'}` : ''}
+            `.trim();
 
             const formatDiff = (diff, label1, label2) =>
                 diff >= 0 ? `${label1} is ${formatCurrency(Math.abs(diff))} higher`
                           : `${label2} is ${formatCurrency(Math.abs(diff))} higher`;
 
-            let differenceHtml = `<p><strong>Monthly Rent:</strong> Year 1: ${formatCurrency(monthlyRent)} → Year 30: ${formatCurrency(year30Rent)}<br>` +
-                `<strong>Initial Difference:</strong> ${formatDiff(initialDifference, 'Rent', 'Mortgage')}<br>` +
-                `<strong>Year 30 Difference:</strong> ${formatDiff(year30Difference, 'Rent', 'Mortgage')}` +
-                switchInfo + `</p>`;
+            const differenceHtml = `<p><strong>Monthly Rent:</strong> Year 1: ${formatCurrency(monthlyRent)} → Year 30: ${formatCurrency(year30Rent)}<br>
+                <strong>Initial Difference:</strong> ${formatDiff(initialDifference, 'Rent', 'Mortgage')}<br>
+                <strong>Year 30 Difference:</strong> ${formatDiff(year30Difference, 'Rent', 'Mortgage')}
+                ${switchInfo}</p>`;
 
             document.getElementById('differenceInfo').innerHTML = differenceHtml;
 
@@ -974,19 +969,14 @@
             const winnerIcon = winner === 'Buy House' ? '🏠' : '📈';
 
             // Build bankruptcy warnings if any
-            let bankruptcyWarnings = '';
-            if (buyerBankruptcyYear !== null || renterBankruptcyYear !== null) {
-                bankruptcyWarnings = '<div style="background-color: #fff3cd; border: 2px solid #ffc107; border-radius: 10px; padding: 15px; margin-bottom: 20px;">';
-                if (buyerBankruptcyYear !== null) {
-                    bankruptcyWarnings += `<p style="margin: 5px 0; color: #856404;"><strong>💥 BUYER BANKRUPTCY:</strong> Year ${buyerBankruptcyYear.toFixed(1)} - Cannot cover mortgage payments from income + portfolio</p>`;
-                }
-                if (renterBankruptcyYear !== null) {
-                    bankruptcyWarnings += `<p style="margin: 5px 0; color: #856404;"><strong>💥 RENTER BANKRUPTCY:</strong> Year ${renterBankruptcyYear.toFixed(1)} - Cannot cover rent payments from income + portfolio</p>`;
-                }
-                bankruptcyWarnings += '</div>';
-            }
+            const bankruptcyWarnings = (buyerBankruptcyYear !== null || renterBankruptcyYear !== null)
+                ? `<div style="background-color: #fff3cd; border: 2px solid #ffc107; border-radius: 10px; padding: 15px; margin-bottom: 20px;">
+                    ${buyerBankruptcyYear !== null ? `<p style="margin: 5px 0; color: #856404;"><strong>💥 BUYER BANKRUPTCY:</strong> Year ${buyerBankruptcyYear.toFixed(1)} - Cannot cover mortgage payments from income + portfolio</p>` : ''}
+                    ${renterBankruptcyYear !== null ? `<p style="margin: 5px 0; color: #856404;"><strong>💥 RENTER BANKRUPTCY:</strong> Year ${renterBankruptcyYear.toFixed(1)} - Cannot cover rent payments from income + portfolio</p>` : ''}
+                </div>`
+                : '';
 
-            let strategyHtml = bankruptcyWarnings + `
+            const strategyHtml = `${bankruptcyWarnings}
                 <div class="value-breakdown">
                     <div class="value-card buyer">
                         <h4>🏠 Buy House</h4>
@@ -994,9 +984,9 @@
                         <div class="detail">• House Value: ${formatCurrency(finalHouseValue)}</div>
                         <div class="detail">• Stock Portfolio: ${formatCurrency(housingInvestBalance)}</div>
                         <div class="detail">• Additional Invested: ${formatCurrency(totalHousingInvestment)}</div>
-                        ${totalHousingLiquidation > 0 ? `<div class="detail" style="color: #dc3545;">• Portfolio Liquidated: ${formatCurrency(totalHousingLiquidation)}</div>` : ''}
-                        ${buyerPortfolioDepletedYear ? `<div class="detail" style="color: #dc3545; font-weight: bold;">⚠️ Portfolio Depleted: Year ${buyerPortfolioDepletedYear.toFixed(1)}</div>` : ''}
-                        ${buyerBankruptcyYear ? `<div class="detail" style="color: #dc3545; font-weight: bold;">💥 BANKRUPTCY: Year ${buyerBankruptcyYear.toFixed(1)} - Cannot cover mortgage payments</div>` : ''}
+                        ${detailLine(totalHousingLiquidation > 0, `• Portfolio Liquidated: ${formatCurrency(totalHousingLiquidation)}`)}
+                        ${detailLine(buyerPortfolioDepletedYear, `⚠️ Portfolio Depleted: Year ${buyerPortfolioDepletedYear?.toFixed(1)}`, true)}
+                        ${detailLine(buyerBankruptcyYear, `💥 BANKRUPTCY: Year ${buyerBankruptcyYear?.toFixed(1)} - Cannot cover mortgage payments`, true)}
                         <div class="detail">• Total Paid: ${formatCurrency(totalMortgagePaid)}</div>
                     </div>
                     <div class="value-card renter">
@@ -1004,9 +994,9 @@
                         <div class="total">${formatCurrency(finalRentValue)}</div>
                         <div class="detail">• Stock Portfolio: ${formatCurrency(finalRentValue)}</div>
                         <div class="detail">• Additional Invested: ${formatCurrency(totalRentInvestment)}</div>
-                        ${totalRentLiquidation > 0 ? `<div class="detail" style="color: #dc3545;">• Portfolio Liquidated: ${formatCurrency(totalRentLiquidation)}</div>` : ''}
-                        ${renterPortfolioDepletedYear ? `<div class="detail" style="color: #dc3545; font-weight: bold;">⚠️ Portfolio Depleted: Year ${renterPortfolioDepletedYear.toFixed(1)}</div>` : ''}
-                        ${renterBankruptcyYear ? `<div class="detail" style="color: #dc3545; font-weight: bold;">💥 BANKRUPTCY: Year ${renterBankruptcyYear.toFixed(1)} - Cannot cover rent payments</div>` : ''}
+                        ${detailLine(totalRentLiquidation > 0, `• Portfolio Liquidated: ${formatCurrency(totalRentLiquidation)}`)}
+                        ${detailLine(renterPortfolioDepletedYear, `⚠️ Portfolio Depleted: Year ${renterPortfolioDepletedYear?.toFixed(1)}`, true)}
+                        ${detailLine(renterBankruptcyYear, `💥 BANKRUPTCY: Year ${renterBankruptcyYear?.toFixed(1)} - Cannot cover rent payments`, true)}
                         <div class="detail">• Total Paid: ${formatCurrency(totalRentPaid)}</div>
                     </div>
                 </div>
