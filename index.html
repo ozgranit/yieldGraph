@@ -648,13 +648,15 @@
             const totalFees = realtorFeeAmount + lawyerFeeAmount + buyerTaxAmount;
 
             // Calculate mortgage from house worth, initial investment, and fees
-            const mortgage = houseWorth - investment + totalFees;
+            // If negative, it means cash purchase with money left over to invest
+            const mortgage = Math.max(0, houseWorth - investment + totalFees);
+            const leftoverCash = investment - houseWorth - totalFees;
+            const buyerInitialStockInvestment = leftoverCash > 0 ? leftoverCash : 0;
 
             // Validate inputs
             const validations = [
                 { value: investment, condition: investment <= 0, msg: 'Please enter a valid investment amount' },
                 { value: houseWorth, condition: houseWorth < 0, msg: 'Please enter a valid house worth' },
-                { value: mortgage, condition: mortgage < 0, msg: 'House worth must be greater than or equal to initial investment' },
                 { value: mortgageRate, condition: mortgageRate < 0, msg: 'Please enter valid mortgage rate' },
                 { value: availableIncome, condition: availableIncome <= 0, msg: 'Please enter valid available income' }
             ];
@@ -717,7 +719,7 @@
             const renterStockBalances = [];
             const renterInitialInvestmentOnly = []; // Track initial investment growth only
             let rentInvestBalance = investment;
-            let housingInvestBalance = 0;
+            let housingInvestBalance = buyerInitialStockInvestment; // Start with leftover cash if any
             let remainingMortgage = mortgage;
             let currentMonthlyRent = monthlyRent;
 
@@ -973,7 +975,8 @@
                          realtorFeeAmount, lawyerFeeAmount, buyerTaxAmount, totalFees, includeAdditionalCosts,
                          houseWorth, housingYield, totalHousingInvestment, totalRentInvestment,
                          totalHousingLiquidation, totalRentLiquidation, totalMortgagePaid, totalRentPaid,
-                         buyerBankruptcyYear, renterBankruptcyYear, buyerPortfolioDepletedYear, renterPortfolioDepletedYear);
+                         buyerBankruptcyYear, renterBankruptcyYear, buyerPortfolioDepletedYear, renterPortfolioDepletedYear,
+                         buyerInitialStockInvestment);
 
             // Show chart containers
             document.getElementById('chartContainer').style.display = 'block';
@@ -991,7 +994,8 @@
                               realtorFeeAmount, lawyerFeeAmount, buyerTaxAmount, totalFees, includeAdditionalCosts,
                               houseWorth, housingYield, totalHousingInvestment, totalRentInvestment,
                               totalHousingLiquidation, totalRentLiquidation, totalMortgagePaid, totalRentPaid,
-                              buyerBankruptcyYear, renterBankruptcyYear, buyerPortfolioDepletedYear, renterPortfolioDepletedYear) {
+                              buyerBankruptcyYear, renterBankruptcyYear, buyerPortfolioDepletedYear, renterPortfolioDepletedYear,
+                              buyerInitialStockInvestment) {
             const year30Rent = monthlyRent * Math.pow(rentGrowthMultiplier, 30);
             const initialDifference = monthlyRent - monthlyMortgagePayment;
             const year30Difference = year30Rent - monthlyMortgagePayment;
@@ -1038,7 +1042,7 @@
             let feesHtml = '';
             if (includeAdditionalCosts && totalFees > 0) {
                 feesHtml = `<div class="fees-box">
-                    <strong>Additional Costs Added to Mortgage:</strong><br>
+                    <strong>Additional Costs ${mortgage > 0 ? 'Added to Mortgage' : 'Paid'}:</strong><br>
                     &nbsp;&nbsp;&nbsp;• Realtor Fee: ${formatCurrency(realtorFeeAmount)}<br>
                     &nbsp;&nbsp;&nbsp;• Lawyer Fee: ${formatCurrency(lawyerFeeAmount)}<br>
                     ${buyerTaxAmount > 0 ? `&nbsp;&nbsp;&nbsp;• Purchase Tax: ${formatCurrency(buyerTaxAmount)}<br>` : ''}
@@ -1048,6 +1052,7 @@
 
             // Mortgage payment section
             const mortgageHtml = `${feesHtml}
+                ${buyerInitialStockInvestment > 0 ? `<p><strong>💰 Cash Purchase!</strong> Leftover invested in stocks: ${formatCurrency(buyerInitialStockInvestment)}</p>` : ''}
                 <p><strong>Total Mortgage Taken:</strong> ${formatCurrency(mortgage)}<br>
                 <strong>Monthly Mortgage Payment (Fixed):</strong> ${mortgage > 0 ? formatCurrency(monthlyMortgagePayment) : '₪0 (no mortgage)'}</p>`;
 
